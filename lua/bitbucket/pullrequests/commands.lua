@@ -13,13 +13,11 @@ end
 local M = {}
 
 M.reviewing = function()
-    local pull_requests = pr_api.get_pull_requests_to_review()
-    ui_select_pr(pull_requests)
+    pr_api.get_pull_requests_to_review(ui_select_pr)
 end
 
 M.mine = function()
-    local pull_requests = pr_api.get_my_pull_requests()
-    ui_select_pr(pull_requests)
+    pr_api.get_my_pull_requests(ui_select_pr)
 end
 
 return M

@@ -6,7 +6,8 @@ local checkout_pr = function(item)
         "git fetch origin "
             .. item.source.branch.name
             .. " && git checkout "
-            .. item.source.branch.name,
+            .. item.source.branch.name
+            .. " && git pull",
         {
             stdout_buffered = true,
             on_exit = function(_, exit_code, _)
@@ -27,6 +28,7 @@ end
 --
 ---@param item PullRequest
 local open_diff = function(item)
+    require("bitbucket.utils.git").fetch_all()
     -- execute DiffviewOpen
     local source_hash = item.source.commit.hash
     local destination_hash = item.destination.commit.hash
