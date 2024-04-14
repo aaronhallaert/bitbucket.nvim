@@ -25,7 +25,7 @@ end
 
 M.component_pr_reviewing = {
     component_content(
-        require("bitbucket.pullrequests.api").get_pull_requests_to_review
+        require("bitbucket.api.pullrequests").get_pull_requests_to_review
     ),
     separator = { left = "", right = "" },
     color = { bg = "#313244", fg = "#80A7EA" },
@@ -44,7 +44,7 @@ M.component_pr_reviewing = {
 
 M.component_pr_mine = {
     component_content(
-        require("bitbucket.pullrequests.api").get_my_pull_requests
+        require("bitbucket.api.pullrequests").get_my_pull_requests
     ),
     separator = { left = "", right = "" },
     color = { bg = "#313244", fg = "#80A7EA" },

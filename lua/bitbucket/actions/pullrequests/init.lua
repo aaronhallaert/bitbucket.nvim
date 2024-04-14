@@ -1,4 +1,4 @@
-local M = {}
+local parse = require("bitbucket.api")
 
 ---@param item PullRequest
 local checkout_pr = function(item)
@@ -39,12 +39,23 @@ local open_diff = function(item)
 end
 
 ---@param item PullRequest
+local open_in_buf = function(item)
+    require("bitbucket.api.comments").get_comments(
+        item,
+        require("bitbucket.actions.comments").display_comments
+    )
+end
+
+local M = {}
+
+---@param item PullRequest
 ---@param _ any
 M.select_pr_callback = function(item, _)
     local options = {
         { format = "checkout branch", callback = checkout_pr },
         { format = "open in browser", callback = open_pr },
         { format = "open diff", callback = open_diff },
+        { format = "open in buffer", callback = open_in_buf },
     }
 
     vim.ui.select(options, {

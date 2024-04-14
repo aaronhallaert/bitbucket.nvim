@@ -3,17 +3,24 @@ local M = {}
 M.commands = {
     pull = {
         reviewing = function()
-            require("bitbucket.pullrequests.commands").reviewing()
+            require("bitbucket.commands.pullrequests").reviewing()
         end,
         mine = function()
-            require("bitbucket.pullrequests.commands").mine()
+            require("bitbucket.commands.pullrequests").mine()
+        end,
+        query = function(...)
+            q = { ... }
+            q = table.concat(q, " ")
+
+            vim.print("query: " .. q)
+            require("bitbucket.commands.pullrequests").query(q)
         end,
     },
 }
 
 M.bitbucket = function(object, action, ...)
     if object ~= nil and action ~= nil then
-        M.commands[object][action]()
+        M.commands[object][action](...)
     end
 end
 

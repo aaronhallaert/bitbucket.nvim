@@ -7,17 +7,20 @@ local data_path = vim.fn.stdpath("data")
 local user_data_path = string.format("%s/bitbucket.json", data_path)
 
 local read_user_data = function()
-    return vim.json.decode(Path:new(user_data_path):read())
+    return vim.json.decode(
+        Path:new(user_data_path):read(),
+        { luanil = { object = true, array = true } }
+    )
 end
 
----@class User
+---@class AppUserInfo
 ---@field username string
 ---@field app_password string
 local user = {}
 
 ---Request user data from input
----@param default User|nil
----@return User
+---@param default AppUserInfo|nil
+---@return AppUserInfo
 local request_user_data = function(default)
     default = vim.tbl_extend(
         "keep",
@@ -46,9 +49,7 @@ end
 
 local M = {}
 
----
----@return string username
----@return string app_password
+---@return AppUserInfo user
 M.user_data = function()
     local ok, stored_user_data = pcall(read_user_data)
 
@@ -70,7 +71,7 @@ M.user_data = function()
 
     save_user_data()
 
-    return user.username, user.app_password
+    return user
 end
 
 return M
