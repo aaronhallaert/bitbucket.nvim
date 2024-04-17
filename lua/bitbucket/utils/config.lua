@@ -16,7 +16,6 @@ end
 ---@class AppUserInfo
 ---@field username string
 ---@field app_password string
-local user = {}
 
 ---Request user data from input
 ---@param default AppUserInfo|nil
@@ -43,7 +42,7 @@ local request_user_data = function(default)
     }
 end
 
-local save_user_data = function()
+local save_user_data = function(user)
     Path:new(user_data_path):write(vim.fn.json_encode(user), "w")
 end
 
@@ -52,6 +51,7 @@ local M = {}
 ---@return AppUserInfo user
 M.user_data = function()
     local ok, stored_user_data = pcall(read_user_data)
+    local user = {}
 
     if not ok or stored_user_data == nil then
         vim.print("bitbucket.nvim: No user data provided...")
@@ -69,7 +69,7 @@ M.user_data = function()
         end
     end
 
-    save_user_data()
+    save_user_data(user)
 
     return user
 end

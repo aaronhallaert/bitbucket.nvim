@@ -1,10 +1,10 @@
+local Logger = require("bitbucket.utils.logger")
 local utils = require("bitbucket.utils")
 local M = {}
 
 --- Executes a command and returns the output
---- @param command string
---- @return table returns empty string upon error
-M.execute = function(command)
+---@return table output
+M.execute_sync = function(command)
     local handle = io.popen(command)
 
     if handle == nil then
@@ -16,12 +16,39 @@ M.execute = function(command)
 
     local output_table = utils.split_string(output, "\n")
 
-    -- remove last empty line
-    if output_table[#output_table] == "" then
-        table.remove(output_table, #output_table)
+    if output_table[#output] == "" then
+        table.remove(output_table, #output)
     end
 
     return output_table
+end
+
+--- @param command string
+--- @param on_success? fun(output: table)
+--- @param on_failure? fun()
+M.execute = function(command, on_success, on_failure)
+    local content = {}
+    vim.fn.jobstart(command, {
+        on_stdout = function(_, data)
+            table.insert(content, data)
+        end,
+        on_exit = function(_, exit_code, _)
+            if exit_code == 0 then
+                if on_success ~= nil then
+                    on_success(vim.tbl_flatten(content))
+                end
+            else
+                Logger:log(
+                    "command:execute",
+                    { command = command, exit_code = exit_code }
+                )
+
+                if on_failure ~= nil then
+                    on_failure()
+                end
+            end
+        end,
+    })
 end
 
 return M

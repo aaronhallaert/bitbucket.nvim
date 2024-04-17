@@ -1,9 +1,9 @@
-local PullRequest = require("bitbucket.types.pullrequest")
+local PullRequest = require("bitbucket.entities.pullrequest")
 local M = {}
 
 ---@param response_body table
 ---@return PullRequest[]
-M.parse_pull_requests_response = function(response_body)
+M.parse_pullrequests = function(response_body)
     ---@type PullRequest[]
     local pull_requests = {}
 

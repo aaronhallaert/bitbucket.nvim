@@ -1,0 +1,4 @@
+---@class Commit
+---@field hash string
+---@field links table
+---@field type "commit"

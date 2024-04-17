@@ -1,4 +1,5 @@
 local bb_commands = require("bitbucket.commands")
+local Env = require("bitbucket.utils.env")
 
 local M = {}
 
@@ -11,6 +12,8 @@ M.setup = function()
         nargs = "*",
         complete = bb_commands.completion,
     })
+
+    Env:setup()
 end
 
 return M

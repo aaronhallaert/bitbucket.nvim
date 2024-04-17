@@ -1,5 +1,4 @@
-local async = require("plenary.async")
-local await_schedule = require("plenary.async").util.scheduler
+local Env = require("bitbucket.utils.env")
 local M = {}
 
 local component_content = function(request)
@@ -31,7 +30,7 @@ M.component_pr_reviewing = {
     color = { bg = "#313244", fg = "#80A7EA" },
     icon = " ",
     cond = function()
-        return require("bitbucket.utils.git").is_bitbucket()
+        return Env:is_bitbucket()
     end,
     on_click = function(n, mouse)
         if n == 1 then
@@ -50,7 +49,7 @@ M.component_pr_mine = {
     color = { bg = "#313244", fg = "#80A7EA" },
     icon = " ",
     cond = function()
-        return require("bitbucket.utils.git").is_bitbucket()
+        return Env:is_bitbucket()
     end,
     on_click = function(n, mouse)
         if n == 1 then

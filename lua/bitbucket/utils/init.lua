@@ -12,6 +12,18 @@ M.split_string = function(inputstr, sep)
     return t
 end
 
+function M.is_white_space(str)
+    return str:gsub("%s", "") == ""
+end
+
+function M.trim(str)
+    return str:gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+function M.remove_duplicate_whitespace(str)
+    return str:gsub("%s+", " ")
+end
+
 M.url_encode = function(str)
     if type(str) ~= "number" then
         str = str:gsub("\r?\n", "\r\n")

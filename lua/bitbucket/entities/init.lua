@@ -1,0 +1,14 @@
+---@class Account
+---@field links table
+---@field uuid string
+---@field username string
+---@field created_on string
+---@field display_name string
+
+---@class User
+---@field display_name string
+---@field links table
+---@field type string
+---@field uuid string
+---@field account_id string
+---@field nickname string

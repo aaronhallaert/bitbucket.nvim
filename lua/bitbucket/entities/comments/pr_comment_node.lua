@@ -1,3 +1,5 @@
+local Git = require("bitbucket.utils.git")
+
 ---@class PRCommentNode: PRComment
 ---@field children PRCommentNode[]
 local PRCommentNode = {}
@@ -6,10 +8,13 @@ PRCommentNode.__index = PRCommentNode
 
 ---Public functions
 
----@param node PRCommentNode
+---@param node PRComment
 ---@return PRCommentNode
 function PRCommentNode:new(node)
     local obj = node
+
+    ---@cast obj PRCommentNode
+    obj.children = obj.children or {}
 
     return setmetatable(obj, self)
 end
@@ -75,7 +80,7 @@ function PRCommentNode:display(pr, opts)
             local anchor = self.inline.to or self.inline.from or 0
 
             local diff_contents =
-                require("bitbucket.utils.git").show_diff_line({
+                Git:new({sync = true}):show_diff_line({
                     from_hash = pr.destination.commit.hash,
                     to_hash = pr.source.commit.hash,
                     from_line = anchor - 3,
@@ -118,17 +123,18 @@ end
 ---@param comments PRComment[]
 ---@return PRCommentNode[]
 PRCommentNode.create_tree = function(comments)
+    local nodes = {}
     for _, comment in ipairs(comments) do
-        PRCommentNode:new(comment)
+        table.insert(nodes, PRCommentNode:new(comment))
     end
 
-    ---@return table<string, PRComment[]> grouped_comments -- read only
-    local function group_by_parents(commments)
+    ---@return table<string, PRCommentNode[]> grouped_comments -- read only
+    local function group_by_parents(cmts)
         -- Initialize a table to hold comments grouped by parent ID
         local comments_by_parent = {}
 
         -- Group comments by parent ID
-        for _, comment in ipairs(comments) do
+        for _, comment in ipairs(cmts) do
             if comment.parent then
                 -- If the comment has a parent, add it to the parent's children list
                 if not comments_by_parent[comment.parent.id] then
@@ -160,7 +166,7 @@ PRCommentNode.create_tree = function(comments)
     end
 
     -- Recursively nest comments under their parent comments
-    for _, comment in ipairs(comments) do
+    for _, comment in ipairs(nodes) do
         -- If the comment has no parent, start nesting from it
         if not comment.parent then
             nest_comments(comment)

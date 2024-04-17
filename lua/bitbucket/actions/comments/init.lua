@@ -1,7 +1,5 @@
 local M = {}
 
-local PRCommentNode = require("bitbucket.actions.comments.pr_comment_node")
-
 --- insert comment in table
 ---@param comment PRCommentNode
 local function deserialize_comment(pr, contents, comment, indent)
@@ -21,19 +19,17 @@ M.display_comments = function(pr, comments)
     -- open a buffer and write the comments as json
     local buf = vim.api.nvim_create_buf(false, true)
 
-    local root_comments = PRCommentNode.create_tree(comments)
     local contents = {}
 
     table.insert(contents, pr:display())
 
-    -- sort based on `inline` ~= nil
     local inline_comments = vim.tbl_filter(function(item)
         return item:is_inline()
-    end, root_comments)
+    end, comments)
 
     local general_comments = vim.tbl_filter(function(item)
         return item:is_general_comment()
-    end, root_comments)
+    end, comments)
 
     table.insert(contents, "## Comments")
     table.insert(contents, "")
