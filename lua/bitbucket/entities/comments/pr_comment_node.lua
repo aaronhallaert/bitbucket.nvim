@@ -88,7 +88,6 @@ function PRCommentNode:display(pr, opts)
                     filename = self.inline.path,
                 })
 
-            vim.print(diff_contents)
             if diff_contents == nil or #diff_contents == 0 then
                 goto comment
             end

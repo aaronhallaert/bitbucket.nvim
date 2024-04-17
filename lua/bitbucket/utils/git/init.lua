@@ -68,7 +68,7 @@ function Git:show_diff_line(opt)
             )
     end
 
-    self:_execute(command)
+    return self:_execute(command)
 end
 
 return Git
