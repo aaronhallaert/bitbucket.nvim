@@ -93,12 +93,8 @@ function PRCommentNode:display(pr, opts)
             end
 
             table.insert(contents, "```diff")
-            for i, line in ipairs(diff_contents) do
-                if i < 5 then
-                    goto continue
-                end
+            for _, line in ipairs(diff_contents) do
                 table.insert(contents, line)
-                ::continue::
             end
             table.insert(contents, "```")
             table.insert(contents, "")
