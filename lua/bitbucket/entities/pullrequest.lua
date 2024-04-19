@@ -84,7 +84,8 @@ function PullRequest:display()
     )
     table.insert(
         contents,
-        require("bitbucket.utils").parse_html(self.summary.html)
+        require("bitbucket.utils").split_string(self.summary.raw, "\n")
+        -- require("bitbucket.utils").parse_html(self.summary.html)
     )
 
     table.insert(contents, "")

@@ -37,9 +37,9 @@ end
 --- Private functions
 
 ---@return table
-function PRCommentNode:_parse_html_content()
-    -- return require("bitbucket.utils").split_string(self.content.raw, "\n")
-    return require("bitbucket.utils").parse_html(self.content.html)
+function PRCommentNode:_parse_content()
+    return require("bitbucket.utils").split_string(self.content.raw, "\n")
+    -- return require("bitbucket.utils").parse_html(self.content.html)
 end
 
 ---@return table
@@ -105,7 +105,7 @@ function PRCommentNode:display(pr, opts)
     table.insert(contents, prefix .. self.user.display_name)
     table.insert(contents, prefix .. "-----------------")
     if self.content ~= nil then
-        for _, line in ipairs(self:_parse_html_content()) do
+        for _, line in ipairs(self:_parse_content()) do
             table.insert(contents, prefix .. line)
         end
     end
