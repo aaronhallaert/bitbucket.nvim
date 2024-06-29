@@ -1,4 +1,5 @@
 local async = require("plenary.async")
+local Writer = require("bitbucket.ui.writer")
 local M = {}
 
 --- insert comment in table
@@ -26,10 +27,9 @@ local wrapped_deserialize_comment = async.wrap(
 )
 
 local generate_contents_from_comments = async.wrap(
-    function(pr, comments, callback)
-        local contents = {}
-
-        table.insert(contents, pr:display())
+    function(buf, pr, comments, callback_fold)
+        local folds = {}
+        Writer:write(buf, pr:display())
 
         local inline_comments = vim.tbl_filter(function(item)
             return item:is_inline()
@@ -39,29 +39,26 @@ local generate_contents_from_comments = async.wrap(
             return item:is_general_comment()
         end, comments)
 
-        table.insert(contents, "## Comments")
-        table.insert(contents, "")
+        Writer:write(buf, { "## Comments", "" })
 
         for _, comment in ipairs(general_comments) do
             wrapped_deserialize_comment(pr, nil, comment, 0, function(extra)
-                table.insert(contents, extra)
+                Writer:write(buf, extra)
             end)
         end
 
-        table.insert(contents, "")
-        table.insert(contents, "")
-        table.insert(contents, "## Review")
-        table.insert(contents, "")
+        Writer:write(buf, { "", "", "## Review", "" })
 
         for _, comment in ipairs(inline_comments) do
             wrapped_deserialize_comment(pr, nil, comment, 0, function(extra)
-                table.insert(contents, extra)
+                local startfold, endfold = Writer:write(buf, extra)
+                table.insert(folds, { s = startfold, e = endfold })
             end)
         end
 
-        callback(contents)
+        callback_fold(folds)
     end,
-    3
+    4
 )
 
 ---@param pr PullRequest
@@ -69,23 +66,28 @@ local generate_contents_from_comments = async.wrap(
 M.display_comments = function(pr, comments)
     -- open a buffer and write the comments as json
     local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
 
-    generate_contents_from_comments(pr, comments, function(contents)
-        vim.print("setting the buffer")
-        -- set filetype to markdown
-        vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
-        vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.tbl_flatten(contents))
-        vim.print("setting the buffer, done")
+    generate_contents_from_comments(buf, pr, comments, function(folds)
+        vim.print("showing the buffer")
+        vim.api.nvim_command(":vsplit")
+
+        vim.api.nvim_set_option_value("foldmethod", "manual", {})
+
+        local winid = vim.api.nvim_get_current_win()
+        vim.api.nvim_win_set_buf(winid, buf)
+
+        vim.api.nvim_buf_call(buf, function()
+            for _, fold in ipairs(folds) do
+                vim.api.nvim_command(
+                    string.format("%d,%dfold", fold.s, fold.e - 1)
+                )
+            end
+        end)
+        vim.api.nvim_command("normal! zM")
+
+        vim.api.nvim_command(":setlocal wrap")
     end)
-
-    vim.print("showing the buffer")
-    -- split a window but more basic than the example code above, just a split right
-    vim.api.nvim_command(":vsplit")
-    local winid = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_buf(winid, buf)
-    vim.api.nvim_command(":setlocal wrap")
-    --
-    vim.print("jipla display comments done")
 end
 
 return M
