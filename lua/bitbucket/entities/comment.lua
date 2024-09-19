@@ -19,4 +19,6 @@
 ---@field content PRCommentContent
 ---@field parent PRCommentCompact|nil
 ---@field deleted boolean
+---@field updated_on string
+---@field pending boolean
 ---@field inline? PRCommentLocation

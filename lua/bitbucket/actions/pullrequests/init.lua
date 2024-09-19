@@ -1,4 +1,5 @@
 local Git = require("bitbucket.utils.git")
+local Writer = require("bitbucket.ui.writer")
 
 ---@param item PullRequest
 local open_diff = function(item)

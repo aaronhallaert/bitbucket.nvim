@@ -1,5 +1,6 @@
 local async = require("plenary.async")
 local Writer = require("bitbucket.ui.writer")
+local Activity = require("bitbucket.entities.activity")
 local M = {}
 
 --- insert comment in table
@@ -7,7 +8,9 @@ local M = {}
 local function deserialize_comment(pr, contents, comment, indent)
     contents = contents or {}
 
-    table.insert(contents, comment:display(pr, { indent = indent }))
+    for _, c_line in ipairs(comment:display(pr, { indent = indent })) do
+        table.insert(contents, c_line)
+    end
     table.insert(contents, "")
 
     for _, child in ipairs(comment.children) do
@@ -19,7 +22,6 @@ end
 
 local wrapped_deserialize_comment = async.wrap(
     function(pr, contents, comment, indent, callback)
-        vim.print("wrapped")
         local ret = deserialize_comment(pr, contents, comment, indent)
         callback(ret)
     end,
@@ -39,24 +41,30 @@ local generate_contents_from_comments = async.wrap(
             return item:is_general_comment()
         end, comments)
 
-        Writer:write(buf, { "## Comments", "" })
+        require("bitbucket.api.activity").get_activity(pr, function(_, activity)
+            local act = Activity:new(activity)
+            Writer:write(buf, act:display())
+            Writer:write(buf, { { "" } })
 
-        for _, comment in ipairs(general_comments) do
-            wrapped_deserialize_comment(pr, nil, comment, 0, function(extra)
-                Writer:write(buf, extra)
-            end)
-        end
+            Writer:write(buf, { { "## Comments", "Title" }, { "" } })
 
-        Writer:write(buf, { "", "", "## Review", "" })
+            for _, comment in ipairs(general_comments) do
+                wrapped_deserialize_comment(pr, nil, comment, 0, function(extra)
+                    Writer:write(buf, extra)
+                end)
+            end
 
-        for _, comment in ipairs(inline_comments) do
-            wrapped_deserialize_comment(pr, nil, comment, 0, function(extra)
-                local startfold, endfold = Writer:write(buf, extra)
-                table.insert(folds, { s = startfold, e = endfold })
-            end)
-        end
+            Writer:write(buf, { { "## Review", "Title" } })
 
-        callback_fold(folds)
+            for _, comment in ipairs(inline_comments) do
+                wrapped_deserialize_comment(pr, nil, comment, 0, function(extra)
+                    local startfold, endfold = Writer:write(buf, extra)
+                    table.insert(folds, { s = startfold, e = endfold })
+                end)
+            end
+
+            callback_fold(folds)
+        end)
     end,
     4
 )
@@ -69,7 +77,6 @@ M.display_comments = function(pr, comments)
     vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
 
     generate_contents_from_comments(buf, pr, comments, function(folds)
-        vim.print("showing the buffer")
         vim.api.nvim_command(":vsplit")
 
         vim.api.nvim_set_option_value("foldmethod", "manual", {})

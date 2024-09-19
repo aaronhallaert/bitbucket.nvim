@@ -72,24 +72,37 @@ end
 function PullRequest:display()
     local contents = {}
 
-    table.insert(contents, "# " .. self.title)
-    table.insert(contents, "")
-    table.insert(
-        contents,
+    table.insert(contents, { "# " .. self.title, "Title" })
+
+    table.insert(contents, {
         string.format(
             "`%s` -> `%s`",
             self.source.branch.name,
             self.destination.branch.name
-        )
-    )
-    table.insert(
-        contents,
-        require("bitbucket.utils").split_string(self.summary.raw, "\n")
-        -- require("bitbucket.utils").parse_html(self.summary.html)
-    )
+        ),
+        "Comment",
+    })
 
-    table.insert(contents, "")
-    table.insert(contents, "")
+    if self.state == "MERGED" then
+        table.insert(contents, { "Merged", "StateMergedFloat" })
+    elseif self.state == "DECLINED" then
+        table.insert(contents, { "Declined", "BitbucketRedFloat" })
+    elseif self.state == "SUPERSEDED" then
+        table.insert(contents, { "Superseded", "BitbucketPurpleFloat" })
+    else
+        table.insert(contents, { "Open", "BitbucketStateOpen" })
+    end
+
+    table.insert(contents, { "" })
+
+    for _, line in
+        ipairs(require("bitbucket.utils.parser").parse_html(self.summary.html))
+    do
+        table.insert(contents, line)
+    end
+
+    table.insert(contents, { "" })
+    table.insert(contents, { "" })
     return contents
 end
 

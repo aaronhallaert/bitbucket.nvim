@@ -50,17 +50,44 @@ M.read_only = function(t)
     return proxy
 end
 
-M.parse_html = function(html)
-    local result = html
+-- Function to parse ISO 8601 format to Lua time table
+local function parse_iso8601(timestamp)
+    -- Extract date and time components from the string
+    local pattern = "(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)"
+    local year, month, day, hour, min, sec = timestamp:match(pattern)
 
-    result = string.gsub(result, '<img class="emoji".-alt="(.-)".->', "%1")
+    -- Convert to a table for os.time() to work with
+    return os.time({
+        year = tonumber(year),
+        month = tonumber(month),
+        day = tonumber(day),
+        hour = tonumber(hour),
+        min = tonumber(min),
+        sec = tonumber(sec),
+    })
+end
 
-    result = string.gsub(result, "<code>(.-)</code>", "`%1`")
+-- Function to calculate time difference
+M.time_difference = function(timestamp)
+    local parsed_time = parse_iso8601(timestamp)
 
-    -- Remove all other HTML tags
-    result = string.gsub(result, "<.->", "")
+    -- Get the current time (in UTC)
+    local current_time = os.time(os.date("!*t"))
 
-    return M.split_string(result, "\n")
+    -- Calculate the difference in seconds
+    local diff = os.difftime(current_time, parsed_time)
+
+    if diff >= (3600 * 24) then
+        local days_ago = math.floor(diff / 3600 / 24)
+        return days_ago .. " days ago"
+    elseif diff >= 3600 then
+        local hours_ago = math.floor(diff / 3600)
+        return hours_ago .. " hours ago"
+    else
+        -- Otherwise, show minutes ago
+        local minutes_ago = math.floor(diff / 60)
+        return minutes_ago .. " minutes ago"
+    end
 end
 
 return M

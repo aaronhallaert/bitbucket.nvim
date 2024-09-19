@@ -74,4 +74,36 @@ M.user_data = function()
     return user
 end
 
+---@class ConfigColors
+---@field white string
+---@field grey string
+---@field black string
+---@field red string
+---@field dark_red string
+---@field green string
+---@field dark_green string
+---@field yellow string
+---@field dark_yellow string
+---@field blue string
+---@field dark_blue string
+---@field purple string
+
+---@return ConfigColors
+M.colors = function()
+    return {
+        white = "#ffffff",
+        grey = "#2A354C",
+        black = "#000000",
+        red = "#fdb8c0",
+        dark_red = "#da3633",
+        green = "#acf2bd",
+        dark_green = "#238636",
+        yellow = "#d3c846",
+        dark_yellow = "#735c0f",
+        blue = "#58A6FF",
+        dark_blue = "#0366d6",
+        purple = "#6f42c1",
+    }
+end
+
 return M

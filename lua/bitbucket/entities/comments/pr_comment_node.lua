@@ -1,4 +1,5 @@
 local Git = require("bitbucket.utils.git")
+local utils = require("bitbucket.utils")
 
 ---@class PRCommentNode: PRComment
 ---@field children PRCommentNode[]
@@ -38,8 +39,8 @@ end
 
 ---@return table
 function PRCommentNode:_parse_content()
-    return require("bitbucket.utils").split_string(self.content.raw, "\n")
-    -- return require("bitbucket.utils").parse_html(self.content.html)
+    -- return require("bitbucket.utils").split_string(self.content.raw, "\n")
+    return require("bitbucket.utils.parser").parse_html(self.content.html)
 end
 
 ---@return table
@@ -51,9 +52,15 @@ function PRCommentNode:_display_location()
     local line_loc = {}
 
     if self.inline.from ~= nil then
-        table.insert(line_loc, self.inline.path ..":".. tostring(self.inline.from) .. " (old)")
+        table.insert(
+            line_loc,
+            self.inline.path .. ":" .. tostring(self.inline.from) .. " (old)"
+        )
     elseif self.inline.to ~= nil then
-        table.insert(line_loc, self.inline.path ..":".. tostring(self.inline.to) .. " (new)")
+        table.insert(
+            line_loc,
+            self.inline.path .. ":" .. tostring(self.inline.to) .. " (new)"
+        )
     end
 
     return line_loc
@@ -69,44 +76,60 @@ function PRCommentNode:display(pr, opts)
     local contents = {}
 
     if not self:is_general_comment() and self:is_root() then
-        table.insert(contents, "> THREAD")
+        table.insert(contents, { "> THREAD" })
+        if self.pending then
+            table.insert(contents, { "Pending", "BitbucketStatePendingBubble" })
+        end
 
         if self:is_inline() and pr.source ~= nil then
             for _, line in ipairs(self:_display_location()) do
-                table.insert(contents, prefix .. line)
+                table.insert(contents, { prefix .. line, "Comment" })
             end
-            table.insert(contents, "")
+            table.insert(contents, { "" })
 
             local anchor = self.inline.to or self.inline.from or 0
 
-            local diff_contents =
-                Git:new({sync = true}):show_diff_line({
-                    from_hash = pr.destination.commit.hash,
-                    to_hash = pr.source.commit.hash,
-                    from_line = anchor - 3,
-                    to_line = anchor,
-                    filename = self.inline.path,
-                })
+            local diff_contents = Git:new({ sync = true }):show_diff_line({
+                from_hash = pr.destination.commit.hash,
+                to_hash = pr.source.commit.hash,
+                from_line = anchor - 3,
+                to_line = anchor,
+                filename = self.inline.path,
+            })
 
             if diff_contents == nil or #diff_contents == 0 then
                 goto comment
             end
 
-            table.insert(contents, "```diff")
             for _, line in ipairs(diff_contents) do
-                table.insert(contents, line)
+                if line:find("^+") then
+                    table.insert(contents, { line, "diffAdd" })
+                elseif line:find("^-") then
+                    table.insert(contents, { line, "diffDelete" })
+                elseif line:find("^@") then
+                    table.insert(contents, { line, "diffIndexLine" })
+                end
             end
-            table.insert(contents, "```")
-            table.insert(contents, "")
+            table.insert(contents, { "" })
         end
     end
 
     ::comment::
-    table.insert(contents, prefix .. self.user.display_name)
-    table.insert(contents, prefix .. "-----------------")
+    table.insert(contents, {
+        prefix
+            .. "  "
+            .. self.user.display_name
+            .. " ("
+            .. utils.time_difference(self.updated_on)
+            .. ")",
+        "SubTitle",
+    })
+    table.insert(contents, { prefix .. "-----------------", "Comment" })
     if self.content ~= nil then
         for _, line in ipairs(self:_parse_content()) do
-            table.insert(contents, prefix .. line)
+            local text = line[1]
+            local hi = line[2] or "Comment"
+            table.insert(contents, { prefix .. text, hi })
         end
     end
 
