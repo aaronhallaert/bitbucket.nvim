@@ -23,4 +23,11 @@ M.parse_comments = function(response_body)
     return response_body.values
 end
 
+---@param response_body table
+---@return CommitStatus[]
+M.parse_statuses = function(response_body)
+    ---@type CommitStatus[]
+    return response_body.values
+end
+
 return M

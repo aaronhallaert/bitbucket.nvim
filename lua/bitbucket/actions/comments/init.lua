@@ -1,6 +1,7 @@
 local async = require("plenary.async")
 local Writer = require("bitbucket.ui.writer")
 local Activity = require("bitbucket.entities.activity")
+local CommitStatus = require("bitbucket.entities.commit_status")
 local M = {}
 
 --- insert comment in table
@@ -41,29 +42,55 @@ local generate_contents_from_comments = async.wrap(
             return item:is_general_comment()
         end, comments)
 
-        require("bitbucket.api.activity").get_activity(pr, function(_, activity)
-            local act = Activity:new(activity)
-            Writer:write(buf, act:display())
-            Writer:write(buf, { { "" } })
-
-            Writer:write(buf, { { "## Comments", "Title" }, { "" } })
-
-            for _, comment in ipairs(general_comments) do
-                wrapped_deserialize_comment(pr, nil, comment, 0, function(extra)
-                    Writer:write(buf, extra)
-                end)
+        require("bitbucket.api.statuses").get_statuses(pr, function(_, statuses)
+            for _, status in ipairs(statuses) do
+                local stat = CommitStatus:new(status)
+                Writer:write(buf, stat:display())
             end
 
-            Writer:write(buf, { { "## Review", "Title" } })
+            require("bitbucket.api.activity").get_activity(
+                pr,
+                function(_, activity)
+                    local act = Activity:new(activity)
+                    Writer:write(buf, act:display())
+                    Writer:write(buf, { { "" } })
 
-            for _, comment in ipairs(inline_comments) do
-                wrapped_deserialize_comment(pr, nil, comment, 0, function(extra)
-                    local startfold, endfold = Writer:write(buf, extra)
-                    table.insert(folds, { s = startfold, e = endfold })
-                end)
-            end
+                    Writer:write(buf, { { "## Comments", "Title" }, { "" } })
 
-            callback_fold(folds)
+                    for _, comment in ipairs(general_comments) do
+                        wrapped_deserialize_comment(
+                            pr,
+                            nil,
+                            comment,
+                            0,
+                            function(extra)
+                                Writer:write(buf, extra)
+                            end
+                        )
+                    end
+
+                    Writer:write(buf, { { "## Review", "Title" } })
+
+                    for _, comment in ipairs(inline_comments) do
+                        wrapped_deserialize_comment(
+                            pr,
+                            nil,
+                            comment,
+                            0,
+                            function(extra)
+                                local startfold, endfold =
+                                    Writer:write(buf, extra)
+                                table.insert(
+                                    folds,
+                                    { s = startfold, e = endfold }
+                                )
+                            end
+                        )
+                    end
+
+                    callback_fold(folds)
+                end
+            )
         end)
     end,
     4
