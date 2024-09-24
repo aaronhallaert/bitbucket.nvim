@@ -105,6 +105,22 @@ M.display_comments = function(pr, comments)
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_set_option_value("filetype", "bitbucket_ft", { buf = buf })
 
+    vim.api.nvim_buf_set_keymap(
+        buf,
+        "n",
+        "<Tab>",
+        ":normal! zjzMzozt<CR>",
+        { noremap = true, silent = true }
+    )
+
+    vim.api.nvim_buf_set_keymap(
+        buf,
+        "n",
+        "<S-Tab>",
+        ":normal! zkkzMzozt<CR>",
+        { noremap = true, silent = true }
+    )
+
     generate_contents_from_comments(buf, pr, comments, function(folds)
         vim.api.nvim_command(":vsplit")
 
