@@ -1,3 +1,5 @@
+local bubble = require("bitbucket.ui.bubble")
+
 ---@class CommitStatus
 ---@field key string
 ---@field name string
@@ -15,16 +17,19 @@ end
 
 function CommitStatus:display()
     local contents = {}
-    table.insert(contents, { "## " .. self.name, "Title" })
 
+    local state_bubble = {}
     if self.state == "FAILED" then
-        table.insert(contents, { self.state, "BitbucketFailingTest" })
+        state_bubble = bubble.make_bubble("Failed", "red")
     elseif self.state == "INPROGRESS" then
-        table.insert(contents, { self.state, "Bubble" })
+        state_bubble = bubble.make_bubble("In Progress", "yellow")
     elseif self.state == "SUCCESSFUL" then
-        table.insert(contents, { self.state, "BitbucketPassingTest" })
+        state_bubble = bubble.make_bubble("Success", "green")
     end
 
+    table.insert(state_bubble, { " - " .. self.name, "Normal" })
+
+    table.insert(contents, state_bubble)
     return contents
 end
 

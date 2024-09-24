@@ -43,10 +43,12 @@ local generate_contents_from_comments = async.wrap(
         end, comments)
 
         require("bitbucket.api.statuses").get_statuses(pr, function(_, statuses)
+            Writer:write(buf, { { "## Statuses", "Title" }, { "" } })
             for _, status in ipairs(statuses) do
                 local stat = CommitStatus:new(status)
                 Writer:write(buf, stat:display())
             end
+            Writer:write(buf, { { "" } })
 
             require("bitbucket.api.activity").get_activity(
                 pr,
@@ -101,7 +103,7 @@ local generate_contents_from_comments = async.wrap(
 M.display_comments = function(pr, comments)
     -- open a buffer and write the comments as json
     local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
+    vim.api.nvim_set_option_value("filetype", "bitbucket_ft", { buf = buf })
 
     generate_contents_from_comments(buf, pr, comments, function(folds)
         vim.api.nvim_command(":vsplit")

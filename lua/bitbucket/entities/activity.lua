@@ -1,4 +1,5 @@
 local Logger = require("bitbucket.utils.logger")
+local bubble = require("bitbucket.ui.bubble")
 local utils = require("bitbucket.utils")
 ---@class ApprovalUser
 ---@field display_name string
@@ -59,14 +60,18 @@ function Activity:display()
             ---@type Approval
             local approval = event.data
 
-            table.insert(content, {
-                "APPROVED by "
+            local approval_content = bubble.make_bubble("APPROVED", "green")
+
+            table.insert(approval_content, {
+                " by "
                     .. approval.user.display_name
                     .. " ("
                     .. utils.time_difference(approval.date)
                     .. ")",
-                "BitbucketStateApprovedBubble",
+                "Normal",
             })
+
+            table.insert(content, approval_content)
         end
     end
 

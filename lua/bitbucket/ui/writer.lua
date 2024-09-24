@@ -10,7 +10,7 @@ local function write_virtual_text(bufnr, ns, line, chunks, mode)
     mode = mode or "extmark"
     if mode == "extmark" then
         pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, line, 0, {
-            virt_text = { chunks },
+            virt_text = chunks,
             virt_text_pos = "overlay",
             hl_mode = "combine",
         })
@@ -18,6 +18,7 @@ local function write_virtual_text(bufnr, ns, line, chunks, mode)
         pcall(vim.api.nvim_buf_set_virtual_text, bufnr, ns, line, chunks, {})
     end
 end
+
 local function write_block(bufnr, lines, line, mark)
     bufnr = bufnr or vim.api.nvim_get_current_buf()
     line = line or vim.api.nvim_buf_line_count(bufnr) + 1
@@ -87,11 +88,13 @@ end
 function Writer:write(bufnr, text)
     local start_line = vim.api.nvim_buf_line_count(bufnr)
     for _, chunk in ipairs(text) do
-        if #chunk == 1 then
+        if #chunk == 1 and type(chunk[1]) == "string" then
             write_block(bufnr, chunk[1])
             write_block(bufnr, { "" })
-        else
+        elseif type(chunk[1]) == "table" then
             write_event(bufnr, chunk)
+        else
+            write_event(bufnr, { chunk })
         end
     end
 

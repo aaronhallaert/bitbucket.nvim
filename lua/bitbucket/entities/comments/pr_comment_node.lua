@@ -115,8 +115,24 @@ function PRCommentNode:display(pr, opts)
     end
 
     ::comment::
+
+    -- border round corners
+    --
+    -- ╭
+    -- ─
+    -- ╮
+    -- │
+    -- ╯
+    -- ─
+    -- ╰
+    -- │
+    table.insert(
+        contents,
+        { prefix .. "╭" .. string.rep("─", 25), "SubTitle" }
+    )
     table.insert(contents, {
         prefix
+            .. "│ "
             .. "  "
             .. self.user.display_name
             .. " ("
@@ -124,14 +140,24 @@ function PRCommentNode:display(pr, opts)
             .. ")",
         "SubTitle",
     })
-    table.insert(contents, { prefix .. "-----------------", "Comment" })
+    table.insert(contents, {
+        { prefix .. "", "Comment" },
+        { "│ ", "SubTitle" },
+        { "-----------------", "Comment" },
+    })
     if self.content ~= nil then
         for _, line in ipairs(self:_parse_content()) do
             local text = line[1]
             local hi = line[2] or "Comment"
-            table.insert(contents, { prefix .. text, hi })
+            table.insert(contents, { prefix .. "│ " .. text, hi })
         end
     end
+
+    table.insert(contents, { prefix .. "│", "SubTitle" })
+    table.insert(
+        contents,
+        { prefix .. "╰" .. string.rep("─", 25), "SubTitle" }
+    )
 
     return contents
 end
