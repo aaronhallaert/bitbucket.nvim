@@ -26,6 +26,12 @@ function Buffer:new(o)
         end,
     })
 
+    vim.api.nvim_buf_set_keymap(obj.buf_id, "n", "gd", "", {
+        callback = function()
+            require("bitbucket.actions.pullrequests").open_diff(obj.pr)
+        end,
+    })
+
     return setmetatable(obj, self)
 end
 

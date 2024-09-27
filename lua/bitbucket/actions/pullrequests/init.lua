@@ -2,7 +2,23 @@ local Git = require("bitbucket.utils.git")
 local Writer = require("bitbucket.ui.writer")
 
 ---@param item PullRequest
-local open_diff = function(item)
+local open_in_buf = function(item)
+    require("bitbucket.api.comments").get_comments(
+        item,
+        require("bitbucket.actions.comments").display_comments
+    )
+end
+
+local M = {}
+
+---@param item PullRequest
+---@param _ any
+M.select_pr_callback = function(item, _)
+    open_in_buf(item)
+end
+
+---@param item PullRequest
+M.open_diff = function(item)
     Git
         :new({
             callback = function(_)
@@ -19,47 +35,6 @@ local open_diff = function(item)
             end,
         })
         :fetch_all()
-end
-
----@param item PullRequest
-local open_in_buf = function(item)
-    require("bitbucket.api.comments").get_comments(
-        item,
-        require("bitbucket.actions.comments").display_comments
-    )
-end
-
-local M = {}
-
----@param item PullRequest
----@param _ any
-M.select_pr_callback = function(item, _)
-    local options = {
-        {
-            format = "checkout branch",
-            callback = function(pr)
-                ---@cast pr PullRequest
-                pr:checkout()
-            end,
-        },
-        {
-            format = "open in browser",
-            callback = function(pr)
-                ---@cast pr PullRequest
-                pr:browse()
-            end,
-        },
-        { format = "open diff", callback = open_diff },
-        { format = "open in buffer", callback = open_in_buf },
-    }
-
-    vim.ui.select(options, {
-        format_item = function(entry)
-            return entry.format
-        end,
-    }, function(action, _)
-        action.callback(item)
-    end)
 end
 
 return M
