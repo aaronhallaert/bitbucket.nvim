@@ -1,4 +1,6 @@
 local async = require("plenary.async")
+local BitbucketState = require("bitbucket.state")
+local Buffer = require("bitbucket.ui.buffer")
 local Writer = require("bitbucket.ui.writer")
 local Activity = require("bitbucket.entities.activity")
 local CommitStatus = require("bitbucket.entities.commit_status")
@@ -22,6 +24,8 @@ local function deserialize_comment(pr, contents, comment, indent)
 end
 
 local wrapped_deserialize_comment = async.wrap(
+    ---@param pr PullRequest
+    ---@param comment PRCommentNode
     function(pr, contents, comment, indent, callback)
         local ret = deserialize_comment(pr, contents, comment, indent)
         callback(ret)
@@ -30,7 +34,11 @@ local wrapped_deserialize_comment = async.wrap(
 )
 
 local generate_contents_from_comments = async.wrap(
-    function(buf, pr, comments, callback_fold)
+    ---@param buffer Buffer
+    ---@param pr PullRequest
+    ---@param comments PRComment[]
+    function(buffer, pr, comments, callback_fold)
+        local buf = buffer.buf_id
         local folds = {}
         Writer:write(buf, pr:display())
 
@@ -82,13 +90,27 @@ local generate_contents_from_comments = async.wrap(
                             function(extra)
                                 local startfold, endfold =
                                     Writer:write(buf, extra)
+
                                 table.insert(
                                     folds,
                                     { s = startfold, e = endfold }
                                 )
+
+                                print(comment.inline.path)
+                                buffer:add_thread({
+                                    mark_id = -1,
+                                    start_line_mark = startfold - 1,
+                                    end_line_mark = endfold,
+                                    line = comment.inline.from
+                                        or comment.inline.to
+                                        or 0,
+                                    path = comment.inline.path,
+                                })
                             end
                         )
                     end
+
+                    vim.print(buffer.threads)
 
                     callback_fold(folds)
                 end
@@ -103,6 +125,8 @@ local generate_contents_from_comments = async.wrap(
 M.display_comments = function(pr, comments)
     -- open a buffer and write the comments as json
     local buf = vim.api.nvim_create_buf(false, true)
+    local buffer = Buffer:new({ buf_id = buf, pr = pr })
+    BitbucketState:add_buffer(buffer)
     vim.api.nvim_set_option_value("filetype", "bitbucket_ft", { buf = buf })
 
     vim.api.nvim_buf_set_keymap(
@@ -121,7 +145,7 @@ M.display_comments = function(pr, comments)
         { noremap = true, silent = true }
     )
 
-    generate_contents_from_comments(buf, pr, comments, function(folds)
+    generate_contents_from_comments(buffer, pr, comments, function(folds)
         vim.api.nvim_command(":vsplit")
 
         vim.api.nvim_set_option_value("foldmethod", "manual", {})
@@ -139,6 +163,8 @@ M.display_comments = function(pr, comments)
         vim.api.nvim_command("normal! zM")
 
         vim.api.nvim_command(":setlocal wrap")
+        vim.api.nvim_command(":setlocal linebreak")
+        vim.api.nvim_command(":setlocal breakindent")
     end)
 end
 

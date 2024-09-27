@@ -83,7 +83,7 @@ function PRCommentNode:display(pr, opts)
 
         if self:is_inline() and pr.source ~= nil then
             for _, line in ipairs(self:_display_location()) do
-                table.insert(contents, { prefix .. line, "Comment" })
+                table.insert(contents, { prefix .. line })
             end
             table.insert(contents, { "" })
 
@@ -148,8 +148,7 @@ function PRCommentNode:display(pr, opts)
     if self.content ~= nil then
         for _, line in ipairs(self:_parse_content()) do
             local text = line[1]
-            local hi = line[2] or "Comment"
-            table.insert(contents, { prefix .. "│ " .. text, hi })
+            table.insert(contents, { prefix .. "│ " .. text })
         end
     end
 

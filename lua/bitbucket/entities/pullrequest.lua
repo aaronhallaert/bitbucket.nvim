@@ -34,7 +34,7 @@ function PullRequest:new(o)
 end
 
 function PullRequest:browse()
-    vim.fn.jobstart("open " .. self.links.html.href)
+    vim.ui.open(self.links.html.href)
 end
 
 function PullRequest:checkout()

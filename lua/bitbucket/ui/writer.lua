@@ -9,7 +9,7 @@ Writer.__index = Writer
 local function write_virtual_text(bufnr, ns, line, chunks, mode)
     mode = mode or "extmark"
     if mode == "extmark" then
-        pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, line, 0, {
+        pcall(vim.api.nvim_buf_set_extmark, bufnr, bb_ns.global, line, 0, {
             virt_text = chunks,
             virt_text_pos = "overlay",
             hl_mode = "combine",
