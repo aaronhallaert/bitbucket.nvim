@@ -1,5 +1,7 @@
 local Git = require("bitbucket.utils.git")
 local utils = require("bitbucket.utils")
+local Logger = require("bitbucket.utils.logger")
+local bubble = require("bitbucket.ui.bubble")
 
 ---@class PRCommentNode: PRComment
 ---@field children PRCommentNode[]
@@ -77,8 +79,15 @@ function PRCommentNode:display(pr, opts)
 
     if not self:is_general_comment() and self:is_root() then
         table.insert(contents, { "> THREAD" })
+
+        if self.resolution ~= {} and self.resolution ~= nil then
+            if self.resolution.type == "comment_resolution" then
+                table.insert(contents, bubble.make_bubble("resolved", "green"))
+            end
+        end
+
         if self.pending then
-            table.insert(contents, { "Pending", "BitbucketStatePendingBubble" })
+            table.insert(contents, bubble.make_bubble("pending", "yellow"))
         end
 
         if self:is_inline() and pr.source ~= nil then

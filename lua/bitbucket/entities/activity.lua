@@ -1,4 +1,3 @@
-local Logger = require("bitbucket.utils.logger")
 local bubble = require("bitbucket.ui.bubble")
 local utils = require("bitbucket.utils")
 ---@class ApprovalUser

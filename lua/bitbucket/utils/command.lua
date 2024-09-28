@@ -5,6 +5,7 @@ local M = {}
 --- Executes a command and returns the output
 ---@return table output
 M.execute_sync = function(command)
+    command = command .. " 2>/dev/null"
     local handle = io.popen(command)
 
     if handle == nil then

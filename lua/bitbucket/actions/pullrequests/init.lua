@@ -1,11 +1,41 @@
 local Git = require("bitbucket.utils.git")
-local Writer = require("bitbucket.ui.writer")
+local Buffer = require("bitbucket.ui.buffer")
+local BitbucketState = require("bitbucket.state")
+
+---@param pr PullRequest
+---@param comments PRComment[]
+---@param activity Activity[]
+---@param statuses CommitStatus[]
+local buf_factory = function(pr, comments, activity, statuses)
+    local buf = vim.api.nvim_create_buf(false, true)
+    local buffer = Buffer:new({
+        buf_id = buf,
+        pr = pr,
+        comments = comments,
+        activity = activity,
+        statuses = statuses,
+    })
+    BitbucketState:add_buffer(buffer)
+    buffer:show()
+end
 
 ---@param item PullRequest
 local open_in_buf = function(item)
     require("bitbucket.api.comments").get_comments(
         item,
-        require("bitbucket.actions.comments").display_comments
+        function(pr_1, comments)
+            require("bitbucket.api.activity").get_activity(
+                pr_1,
+                function(pr, activity)
+                    require("bitbucket.api.statuses").get_statuses(
+                        pr,
+                        function(_, statuses)
+                            buf_factory(pr, comments, activity, statuses)
+                        end
+                    )
+                end
+            )
+        end
     )
 end
 

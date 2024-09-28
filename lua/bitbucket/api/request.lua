@@ -3,8 +3,8 @@ local Logger = require("bitbucket.utils.logger")
 local Job = require("plenary.job")
 
 ---@class RequestOptions
----@field method "GET"
----@field content_type "application/json"
+---@field method "GET" | "POST" | "DELETE"
+---@field content_type "application/json"|nil
 
 ---@class Request
 ---@field base_url? string
@@ -38,17 +38,22 @@ end
 function Request:execute()
     local base_url = self.base_url or default_base_url()
 
+    local args = {
+        "-X",
+        self.opts.method,
+        "-u",
+        Env.user.username .. ":" .. Env.user.app_password,
+        base_url .. self.url,
+    }
+
+    if self.opts.content_type then
+        table.insert(args, "-H")
+        table.insert(args, "Content-Type: " .. self.opts.content_type)
+    end
+
     Job:new({
         command = "curl",
-        args = {
-            "-X",
-            self.opts.method,
-            "-H",
-            "Content-Type: " .. self.opts.content_type,
-            "-u",
-            Env.user.username .. ":" .. Env.user.app_password,
-            base_url .. self.url,
-        },
+        args = args,
         on_exit = function(j, return_val)
             if return_val ~= 0 then
                 Logger:log(
@@ -60,6 +65,11 @@ function Request:execute()
             end
 
             local result = j:result()[1]
+
+            if result == nil then
+                self.fn_handler(nil)
+                return
+            end
 
             vim.schedule(function()
                 local response = vim.json.decode(

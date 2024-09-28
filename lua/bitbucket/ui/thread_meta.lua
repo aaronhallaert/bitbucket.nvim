@@ -4,6 +4,7 @@
 ---@field end_line_mark number
 ---@field path string
 ---@field line number
+---@field comment PRComment
 
 local ThreadMeta = {}
 ThreadMeta.__index = ThreadMeta

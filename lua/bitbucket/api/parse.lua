@@ -1,4 +1,5 @@
 local PullRequest = require("bitbucket.entities.pullrequest")
+local Logger = require("bitbucket.utils.logger")
 local M = {}
 
 ---@param response_body table
@@ -20,6 +21,13 @@ end
 ---@return PRComment[]
 M.parse_comments = function(response_body)
     ---@type PRComment[]
+    return response_body.values
+end
+---
+---@param response_body table
+---@return Activity[]
+M.parse_activities = function(response_body)
+    ---@type Activity[]
     return response_body.values
 end
 

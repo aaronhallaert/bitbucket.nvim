@@ -1,9 +1,16 @@
 local navigation = require("bitbucket.ui.navigation")
 local ns = require("bitbucket.utils.ns")
+local Writer = require("bitbucket.ui.writer")
+local CommitStatus = require("bitbucket.entities.commit_status")
+local Activity = require("bitbucket.entities.activity")
+local temp = require("bitbucket.actions.comments")
 
 ---@class Buffer
 ---@field buf_id number
 ---@field pr PullRequest
+---@field comments PRCommentNode[]
+---@field activity Activity
+---@field statuses CommitStatus[]
 ---@field threads ThreadMeta[]
 local Buffer = {}
 
@@ -32,7 +39,163 @@ function Buffer:new(o)
         end,
     })
 
+    vim.api.nvim_buf_set_keymap(obj.buf_id, "n", "<leader>rt", "", {
+        callback = function()
+            require("bitbucket.ui.interactions").resolve_thread(obj.buf_id)
+        end,
+    })
+
+    vim.api.nvim_buf_set_keymap(obj.buf_id, "n", "<leader>ot", "", {
+        callback = function()
+            require("bitbucket.ui.interactions").reopen_thread(obj.buf_id)
+        end,
+    })
+
     return setmetatable(obj, self)
+end
+
+function Buffer:show()
+    vim.api.nvim_set_option_value(
+        "filetype",
+        "bitbucket_ft",
+        { buf = self.buf_id }
+    )
+
+    vim.api.nvim_buf_set_keymap(
+        self.buf_id,
+        "n",
+        "<Tab>",
+        ":normal! zjzMzozt<CR>",
+        { noremap = true, silent = true }
+    )
+
+    vim.api.nvim_buf_set_keymap(
+        self.buf_id,
+        "n",
+        "<S-Tab>",
+        ":normal! zkkzMzozt<CR>",
+        { noremap = true, silent = true }
+    )
+
+    local folds = self:write()
+
+    if self.buf_id ~= vim.api.nvim_get_current_buf() then
+        vim.api.nvim_command(":vsplit")
+
+        local winid = vim.api.nvim_get_current_win()
+        vim.api.nvim_win_set_buf(winid, self.buf_id)
+    end
+
+    vim.api.nvim_set_option_value("foldmethod", "manual", {})
+
+    vim.api.nvim_buf_call(self.buf_id, function()
+        for _, fold in ipairs(folds) do
+            vim.api.nvim_command(string.format("%d,%dfold", fold.s, fold.e - 1))
+        end
+    end)
+    vim.api.nvim_command("normal! zM")
+
+    vim.api.nvim_command(":setlocal wrap")
+    vim.api.nvim_command(":setlocal linebreak")
+    vim.api.nvim_command(":setlocal breakindent")
+end
+
+function Buffer:reload()
+    require("bitbucket.api.comments").get_comments(
+        self.pr,
+        function(pr_1, comments)
+            require("bitbucket.api.activity").get_activity(
+                pr_1,
+                function(pr, activity)
+                    require("bitbucket.api.statuses").get_statuses(
+                        pr,
+                        function(_, statuses)
+                            self.comments = comments
+                            self.activity = activity
+                            self.statuses = statuses
+
+                            local current_line =
+                                vim.api.nvim_win_get_cursor(0)[1]
+                            self:clear()
+                            self:show()
+                            vim.api.nvim_win_set_cursor(0, { current_line, 0 })
+                            vim.api.nvim_command("normal! ztza")
+                        end
+                    )
+                end
+            )
+        end
+    )
+end
+
+function Buffer:clear()
+    vim.api.nvim_buf_clear_namespace(self.buf_id, -1, 0, -1)
+    vim.api.nvim_buf_set_lines(self.buf_id, 0, -1, false, {})
+end
+
+function Buffer:write()
+    local buf = self.buf_id
+    local folds = {}
+    Writer:write(buf, self.pr:display())
+
+    local inline_comments = vim.tbl_filter(function(item)
+        return item:is_inline()
+    end, self.comments)
+
+    local general_comments = vim.tbl_filter(function(item)
+        return item:is_general_comment()
+    end, self.comments)
+
+    Writer:write(buf, { { "## Statuses", "Title" }, { "" } })
+    for _, status in ipairs(self.statuses) do
+        local stat = CommitStatus:new(status)
+        Writer:write(buf, stat:display())
+    end
+    Writer:write(buf, { { "" } })
+
+    local act = Activity:new(self.activity)
+    Writer:write(buf, act:display())
+    Writer:write(buf, { { "" } })
+
+    Writer:write(buf, { { "## Comments", "Title" }, { "" } })
+
+    for _, comment in ipairs(general_comments) do
+        temp.wrapped_deserialize_comment(
+            self.pr,
+            nil,
+            comment,
+            0,
+            function(extra)
+                Writer:write(buf, extra)
+            end
+        )
+    end
+
+    Writer:write(buf, { { "## Review", "Title" } })
+
+    for _, comment in ipairs(inline_comments) do
+        temp.wrapped_deserialize_comment(
+            self.pr,
+            nil,
+            comment,
+            0,
+            function(extra)
+                local startfold, endfold = Writer:write(buf, extra)
+
+                table.insert(folds, { s = startfold, e = endfold })
+
+                self:add_thread({
+                    mark_id = -1,
+                    start_line_mark = startfold - 1,
+                    end_line_mark = endfold,
+                    line = comment.inline.from or comment.inline.to or 0,
+                    path = comment.inline.path,
+                    comment = comment,
+                })
+            end
+        )
+    end
+    return folds
 end
 
 ---@param thread ThreadMeta

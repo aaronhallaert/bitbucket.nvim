@@ -11,7 +11,7 @@ M.get_activity = function(pr, handle_activity)
     Request:new({
         url = url,
         opts = { method = "GET", content_type = "application/json" },
-        fn_parser = parse.parse_comments,
+        fn_parser = parse.parse_activities,
         fn_handler = function(activity)
             handle_activity(pr, activity)
         end,

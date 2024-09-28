@@ -1,9 +1,4 @@
 local async = require("plenary.async")
-local BitbucketState = require("bitbucket.state")
-local Buffer = require("bitbucket.ui.buffer")
-local Writer = require("bitbucket.ui.writer")
-local Activity = require("bitbucket.entities.activity")
-local CommitStatus = require("bitbucket.entities.commit_status")
 local M = {}
 
 --- insert comment in table
@@ -23,7 +18,7 @@ local function deserialize_comment(pr, contents, comment, indent)
     return contents
 end
 
-local wrapped_deserialize_comment = async.wrap(
+M.wrapped_deserialize_comment = async.wrap(
     ---@param pr PullRequest
     ---@param comment PRCommentNode
     function(pr, contents, comment, indent, callback)
@@ -32,140 +27,5 @@ local wrapped_deserialize_comment = async.wrap(
     end,
     5
 )
-
-local generate_contents_from_comments = async.wrap(
-    ---@param buffer Buffer
-    ---@param pr PullRequest
-    ---@param comments PRComment[]
-    function(buffer, pr, comments, callback_fold)
-        local buf = buffer.buf_id
-        local folds = {}
-        Writer:write(buf, pr:display())
-
-        local inline_comments = vim.tbl_filter(function(item)
-            return item:is_inline()
-        end, comments)
-
-        local general_comments = vim.tbl_filter(function(item)
-            return item:is_general_comment()
-        end, comments)
-
-        require("bitbucket.api.statuses").get_statuses(pr, function(_, statuses)
-            Writer:write(buf, { { "## Statuses", "Title" }, { "" } })
-            for _, status in ipairs(statuses) do
-                local stat = CommitStatus:new(status)
-                Writer:write(buf, stat:display())
-            end
-            Writer:write(buf, { { "" } })
-
-            require("bitbucket.api.activity").get_activity(
-                pr,
-                function(_, activity)
-                    local act = Activity:new(activity)
-                    Writer:write(buf, act:display())
-                    Writer:write(buf, { { "" } })
-
-                    Writer:write(buf, { { "## Comments", "Title" }, { "" } })
-
-                    for _, comment in ipairs(general_comments) do
-                        wrapped_deserialize_comment(
-                            pr,
-                            nil,
-                            comment,
-                            0,
-                            function(extra)
-                                Writer:write(buf, extra)
-                            end
-                        )
-                    end
-
-                    Writer:write(buf, { { "## Review", "Title" } })
-
-                    for _, comment in ipairs(inline_comments) do
-                        wrapped_deserialize_comment(
-                            pr,
-                            nil,
-                            comment,
-                            0,
-                            function(extra)
-                                local startfold, endfold =
-                                    Writer:write(buf, extra)
-
-                                table.insert(
-                                    folds,
-                                    { s = startfold, e = endfold }
-                                )
-
-                                print(comment.inline.path)
-                                buffer:add_thread({
-                                    mark_id = -1,
-                                    start_line_mark = startfold - 1,
-                                    end_line_mark = endfold,
-                                    line = comment.inline.from
-                                        or comment.inline.to
-                                        or 0,
-                                    path = comment.inline.path,
-                                })
-                            end
-                        )
-                    end
-
-                    vim.print(buffer.threads)
-
-                    callback_fold(folds)
-                end
-            )
-        end)
-    end,
-    4
-)
-
----@param pr PullRequest
----@param comments PRComment[]
-M.display_comments = function(pr, comments)
-    -- open a buffer and write the comments as json
-    local buf = vim.api.nvim_create_buf(false, true)
-    local buffer = Buffer:new({ buf_id = buf, pr = pr })
-    BitbucketState:add_buffer(buffer)
-    vim.api.nvim_set_option_value("filetype", "bitbucket_ft", { buf = buf })
-
-    vim.api.nvim_buf_set_keymap(
-        buf,
-        "n",
-        "<Tab>",
-        ":normal! zjzMzozt<CR>",
-        { noremap = true, silent = true }
-    )
-
-    vim.api.nvim_buf_set_keymap(
-        buf,
-        "n",
-        "<S-Tab>",
-        ":normal! zkkzMzozt<CR>",
-        { noremap = true, silent = true }
-    )
-
-    generate_contents_from_comments(buffer, pr, comments, function(folds)
-        vim.api.nvim_command(":vsplit")
-
-        vim.api.nvim_set_option_value("foldmethod", "manual", {})
-
-        local winid = vim.api.nvim_get_current_win()
-        vim.api.nvim_win_set_buf(winid, buf)
-
-        vim.api.nvim_buf_call(buf, function()
-            for _, fold in ipairs(folds) do
-                vim.api.nvim_command(
-                    string.format("%d,%dfold", fold.s, fold.e - 1)
-                )
-            end
-        end)
-        vim.api.nvim_command("normal! zM")
-
-        vim.api.nvim_command(":setlocal wrap")
-        vim.api.nvim_command(":setlocal linebreak")
-        vim.api.nvim_command(":setlocal breakindent")
-    end)
-end
 
 return M
