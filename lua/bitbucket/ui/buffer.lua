@@ -1,8 +1,10 @@
 local navigation = require("bitbucket.ui.navigation")
+local signs = require("bitbucket.ui.signs")
 local ns = require("bitbucket.utils.ns")
 local Writer = require("bitbucket.ui.writer")
 local CommitStatus = require("bitbucket.entities.commit_status")
 local Activity = require("bitbucket.entities.activity")
+local Logger = require("bitbucket.utils.logger")
 local temp = require("bitbucket.actions.comments")
 
 ---@class Buffer
@@ -15,6 +17,10 @@ local temp = require("bitbucket.actions.comments")
 local Buffer = {}
 
 Buffer.__index = Buffer
+
+function Buffer:line_count()
+    return vim.api.nvim_buf_line_count(self.buf_id)
+end
 
 ---@return Buffer
 function Buffer:new(o)
@@ -146,18 +152,20 @@ function Buffer:write()
         return item:is_general_comment()
     end, self.comments)
 
-    Writer:write(buf, { { "## Statuses", "Title" }, { "" } })
-    for _, status in ipairs(self.statuses) do
-        local stat = CommitStatus:new(status)
-        Writer:write(buf, stat:display())
+    if next(self.statuses) ~= nil then
+        Logger:log(self.statuses)
+        for _, status in ipairs(self.statuses) do
+            local stat = CommitStatus:new(status)
+            Writer:write(buf, stat:display())
+        end
+        Writer:write(buf, { { "" } })
     end
-    Writer:write(buf, { { "" } })
 
     local act = Activity:new(self.activity)
-    Writer:write(buf, act:display())
-    Writer:write(buf, { { "" } })
-
-    Writer:write(buf, { { "## Comments", "Title" }, { "" } })
+    if act.events ~= {} then
+        Writer:write(buf, act:display())
+        Writer:write(buf, { { "" } })
+    end
 
     for _, comment in ipairs(general_comments) do
         temp.wrapped_deserialize_comment(
@@ -166,7 +174,16 @@ function Buffer:write()
             comment,
             0,
             function(extra)
-                Writer:write(buf, extra)
+                local c = self:line_count()
+                ---@cast extra DeserializedComment
+                Writer:write(buf, extra.contents)
+                for _, loc in ipairs(extra.comment_locations) do
+                    signs.place_comment_sign(
+                        buf,
+                        c + loc.start_line,
+                        c + loc.end_line
+                    )
+                end
             end
         )
     end
@@ -180,7 +197,16 @@ function Buffer:write()
             comment,
             0,
             function(extra)
-                local startfold, endfold = Writer:write(buf, extra)
+                local c = self:line_count()
+                ---@cast extra DeserializedComment
+                local startfold, endfold = Writer:write(buf, extra.contents)
+                for _, loc in ipairs(extra.comment_locations) do
+                    signs.place_comment_sign(
+                        buf,
+                        c + loc.start_line,
+                        c + loc.end_line
+                    )
+                end
 
                 table.insert(folds, { s = startfold, e = endfold })
 

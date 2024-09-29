@@ -1,3 +1,5 @@
+local icons = require("bitbucket.ui.icons")
+local bubble = require("bitbucket.ui.bubble")
 local Logger = require("bitbucket.utils.logger")
 ---@class PRSummary
 ---@field raw string
@@ -72,25 +74,34 @@ end
 function PullRequest:display()
     local contents = {}
 
-    table.insert(contents, { "# " .. self.title, "Title" })
+    table.insert(contents, {
+        { icons.pullrequest .. "Title: ", "Title" },
+        { self.title, "Normal" },
+    })
 
     table.insert(contents, {
-        string.format(
-            "`%s` -> `%s`",
-            self.source.branch.name,
-            self.destination.branch.name
-        ),
-        "Comment",
+        { icons.user .. "Author: ", "Title" },
+        { self.author.display_name, "Normal" },
+    })
+
+    table.insert(
+        contents,
+        { { "Source: ", "Title" }, { self.source.branch.name, "Normal" } }
+    )
+
+    table.insert(contents, {
+        { "Destination: ", "Title" },
+        { self.destination.branch.name, "Normal" },
     })
 
     if self.state == "MERGED" then
-        table.insert(contents, { "Merged", "StateMergedFloat" })
+        table.insert(contents, bubble.make_bubble("Merged", "green"))
     elseif self.state == "DECLINED" then
-        table.insert(contents, { "Declined", "BitbucketRedFloat" })
+        table.insert(contents, bubble.make_bubble("Declined", "red"))
     elseif self.state == "SUPERSEDED" then
-        table.insert(contents, { "Superseded", "BitbucketPurpleFloat" })
+        table.insert(contents, bubble.make_bubble("Superseded", "yellow"))
     else
-        table.insert(contents, { "Open", "BitbucketStateOpen" })
+        table.insert(contents, bubble.make_bubble("Open", "blue"))
     end
 
     table.insert(contents, { "" })

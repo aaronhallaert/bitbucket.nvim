@@ -5,6 +5,7 @@ local M = {}
 
 M.setup = function()
     require("bitbucket.utils.colors").setup()
+    require("bitbucket.ui.signs").setup()
 
     -- create Bitbucket command
     vim.api.nvim_create_user_command("Bitbucket", function(opt)

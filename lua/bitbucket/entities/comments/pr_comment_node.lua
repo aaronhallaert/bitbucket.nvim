@@ -1,6 +1,6 @@
 local Git = require("bitbucket.utils.git")
+local icons = require("bitbucket.ui.icons")
 local utils = require("bitbucket.utils")
-local Logger = require("bitbucket.utils.logger")
 local bubble = require("bitbucket.ui.bubble")
 
 ---@class PRCommentNode: PRComment
@@ -68,33 +68,48 @@ function PRCommentNode:_display_location()
     return line_loc
 end
 
+---@class CommentLocation
+---@field start_line number
+---@field end_line number
+
+---@class CommentDisplayMeta
+---@field contents table
+---@field comment_location CommentLocation|nil
+
 ---@param pr PullRequest
 ---@param opts table
----@return table
+---@return CommentDisplayMeta
 function PRCommentNode:display(pr, opts)
     opts = vim.tbl_extend("keep", opts or {}, { indent = 0 })
     local prefix = string.rep("\t", opts.indent + 1)
 
-    local contents = {}
+    ---@type CommentDisplayMeta
+    local r = {
+        contents = {},
+        comment_location = nil,
+    }
 
     if not self:is_general_comment() and self:is_root() then
-        table.insert(contents, { "> THREAD" })
+        table.insert(r.contents, { icons.thread .. " Thread" })
 
         if self.resolution ~= {} and self.resolution ~= nil then
             if self.resolution.type == "comment_resolution" then
-                table.insert(contents, bubble.make_bubble("resolved", "green"))
+                table.insert(
+                    r.contents,
+                    bubble.make_bubble("resolved", "green")
+                )
             end
         end
 
         if self.pending then
-            table.insert(contents, bubble.make_bubble("pending", "yellow"))
+            table.insert(r.contents, bubble.make_bubble("pending", "yellow"))
         end
 
         if self:is_inline() and pr.source ~= nil then
             for _, line in ipairs(self:_display_location()) do
-                table.insert(contents, { prefix .. line })
+                table.insert(r.contents, { prefix .. line })
             end
-            table.insert(contents, { "" })
+            table.insert(r.contents, { "" })
 
             local anchor = self.inline.to or self.inline.from or 0
 
@@ -112,36 +127,21 @@ function PRCommentNode:display(pr, opts)
 
             for _, line in ipairs(diff_contents) do
                 if line:find("^+") then
-                    table.insert(contents, { line, "diffAdd" })
+                    table.insert(r.contents, { line, "diffAdd" })
                 elseif line:find("^-") then
-                    table.insert(contents, { line, "diffDelete" })
+                    table.insert(r.contents, { line, "diffDelete" })
                 elseif line:find("^@") then
-                    table.insert(contents, { line, "diffIndexLine" })
+                    table.insert(r.contents, { line, "diffIndexLine" })
                 end
             end
-            table.insert(contents, { "" })
+            table.insert(r.contents, { "" })
         end
     end
 
     ::comment::
 
-    -- border round corners
-    --
-    -- ╭
-    -- ─
-    -- ╮
-    -- │
-    -- ╯
-    -- ─
-    -- ╰
-    -- │
-    table.insert(
-        contents,
-        { prefix .. "╭" .. string.rep("─", 25), "SubTitle" }
-    )
-    table.insert(contents, {
+    table.insert(r.contents, {
         prefix
-            .. "│ "
             .. "  "
             .. self.user.display_name
             .. " ("
@@ -149,25 +149,20 @@ function PRCommentNode:display(pr, opts)
             .. ")",
         "SubTitle",
     })
-    table.insert(contents, {
-        { prefix .. "", "Comment" },
-        { "│ ", "SubTitle" },
-        { "-----------------", "Comment" },
-    })
+    table.insert(r.contents, { prefix .. "-----", "Comment" })
     if self.content ~= nil then
-        for _, line in ipairs(self:_parse_content()) do
-            local text = line[1]
-            table.insert(contents, { prefix .. "│ " .. text })
+        local comment_contents = self:_parse_content()
+        for _, line in ipairs(comment_contents) do
+            table.insert(r.contents, { prefix .. line[1], "" })
         end
+
+        r.comment_location = {
+            start_line = #r.contents - #comment_contents,
+            end_line = #r.contents + 1,
+        }
     end
 
-    table.insert(contents, { prefix .. "│", "SubTitle" })
-    table.insert(
-        contents,
-        { prefix .. "╰" .. string.rep("─", 25), "SubTitle" }
-    )
-
-    return contents
+    return r
 end
 
 --- Static functions
