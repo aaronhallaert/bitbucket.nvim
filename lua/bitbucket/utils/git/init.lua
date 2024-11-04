@@ -38,6 +38,10 @@ function Git:fetch_all()
     self:_execute("git fetch --all")
 end
 
+function Git:merge_base(source_hash, destination_hash)
+    self:_execute("git merge-base " .. source_hash .. " " .. destination_hash)
+end
+
 ---@param opt DiffLineArg
 function Git:show_diff_line(opt)
     local command = ""

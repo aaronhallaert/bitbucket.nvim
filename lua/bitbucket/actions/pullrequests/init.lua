@@ -49,22 +49,24 @@ end
 
 ---@param item PullRequest
 M.open_diff = function(item)
-    Git
-        :new({
-            callback = function(_)
-                -- execute DiffviewOpen
-                local source_hash = item.source.commit.hash
-                local destination_hash = item.destination.commit.hash
+    Git:new({
+        callback = function(_)
+            -- execute DiffviewOpen
+            local source_hash = item.source.commit.hash
+            local destination_hash = item.destination.commit.hash
 
-                vim.api.nvim_command(
-                    ":DiffviewOpen -uno "
-                        .. destination_hash
-                        .. ".."
-                        .. source_hash
-                )
-            end,
-        })
-        :fetch_all()
+            Git:new({
+                callback = function(merge_base_hash)
+                    vim.api.nvim_command(
+                        ":DiffviewOpen -uno "
+                            .. merge_base_hash[1]
+                            .. ".."
+                            .. source_hash
+                    )
+                end,
+            }):merge_base(source_hash, destination_hash)
+        end,
+    }):fetch_all()
 end
 
 return M
