@@ -48,14 +48,15 @@ end
 
 local M = {}
 
----@return AppUserInfo user
+---@return AppUserInfo|nil user
 M.user_data = function()
     local ok, stored_user_data = pcall(read_user_data)
     local user = {}
 
     if not ok or stored_user_data == nil then
         vim.print("bitbucket.nvim: No user data provided...")
-        user = request_user_data()
+        vim.print("bitbucket.nvim: Login with 'Bitbucket auth' first...")
+        return nil
     elseif stored_user_data ~= nil then
         if
             stored_user_data.username == nil
@@ -63,12 +64,19 @@ M.user_data = function()
             or stored_user_data.app_password == nil
             or stored_user_data.app_password == ""
         then
-            user = request_user_data()
+            vim.print("bitbucket.nvim: No user data provided...")
+            vim.print("bitbucket.nvim: Login with 'Bitbucket auth' first...")
+            return nil
         else
             user = stored_user_data
         end
     end
 
+    return user
+end
+
+M.refresh_user_data = function()
+    local user = request_user_data()
     save_user_data(user)
 
     return user

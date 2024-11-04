@@ -16,7 +16,7 @@ M.setup = function()
         complete = bb_commands.completion,
     })
 
-    Env:setup()
+    Env:initialize_remote()
 end
 
 return M

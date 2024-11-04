@@ -1,3 +1,4 @@
+local Env = require("bitbucket.utils.env")
 local M = {}
 
 M.commands = {
@@ -16,11 +17,20 @@ M.commands = {
             require("bitbucket.commands.pullrequests").query(q)
         end,
     },
+    auth = function()
+        Env:auth()
+    end,
 }
 
 M.bitbucket = function(object, action, ...)
+    if object ~= "auth" and not Env:setup() then
+        return
+    end
+
     if object ~= nil and action ~= nil then
         M.commands[object][action](...)
+    elseif object ~= nil and action == nil then
+        M.commands[object](...)
     end
 end
 

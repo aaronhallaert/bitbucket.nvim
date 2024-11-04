@@ -17,11 +17,28 @@ function Env:new(e)
     return setmetatable(env, self)
 end
 
+function Env:auth()
+    local config = require("bitbucket.utils.config")
+    vim.print("Authorizing bitbucket.nvim ...")
+    config.refresh_user_data()
+
+    Env:setup()
+end
+
+---@return boolean success
 function Env:setup()
     local config = require("bitbucket.utils.config")
 
-    self:set_user(config.user_data())
+    local user_data = config.user_data()
+    if user_data == nil then
+        return false
+    end
+    self:set_user(user_data)
 
+    return true
+end
+
+function Env:initialize_remote()
     Git:new({
         callback = function(output)
             local remote = output[1]
