@@ -39,6 +39,12 @@ function Buffer:new(o)
         end,
     })
 
+    vim.api.nvim_buf_set_keymap(obj.buf_id, "n", "gc", "", {
+        callback = function()
+            obj.pr:checkout()
+        end,
+    })
+
     vim.api.nvim_buf_set_keymap(obj.buf_id, "n", "gd", "", {
         callback = function()
             require("bitbucket.actions.pullrequests").open_diff(obj.pr)
