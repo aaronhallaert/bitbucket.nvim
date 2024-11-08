@@ -44,6 +44,9 @@ local M = {}
 ---@param item PullRequest
 ---@param _ any
 M.select_pr_callback = function(item, _)
+    if item == nil then
+        return
+    end
     open_in_buf(item)
 end
 
