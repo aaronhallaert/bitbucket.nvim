@@ -37,6 +37,8 @@ local open_in_buf = function(item)
             )
         end
     )
+
+    BitbucketState.current_pr = item
 end
 
 local M = {}

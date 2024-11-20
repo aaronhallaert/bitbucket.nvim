@@ -5,6 +5,7 @@ local Job = require("plenary.job")
 ---@class RequestOptions
 ---@field method "GET" | "POST" | "DELETE"
 ---@field content_type "application/json"|nil
+---@field body table|nil
 
 ---@class Request
 ---@field base_url? string
@@ -49,6 +50,13 @@ function Request:execute()
     if self.opts.content_type then
         table.insert(args, "-H")
         table.insert(args, "Content-Type: " .. self.opts.content_type)
+    end
+
+    if self.opts.body then
+        table.insert(args, "-d")
+        Logger:log("Request:execute", { body = self.opts.body })
+        table.insert(args, vim.fn.json_encode(self.opts.body))
+        -- table.insert(args, self.opts.body)
     end
 
     Job:new({

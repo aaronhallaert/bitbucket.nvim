@@ -9,6 +9,9 @@ M.commands = {
         mine = function()
             require("bitbucket.commands.pullrequests").mine()
         end,
+        comment = function()
+            require("bitbucket.commands.pullrequests").comment()
+        end,
         query = function(...)
             q = { ... }
             q = table.concat(q, " ")
@@ -17,6 +20,9 @@ M.commands = {
             require("bitbucket.commands.pullrequests").query(q)
         end,
     },
+    log = function()
+        require("bitbucket.utils.logger"):show()
+    end,
     auth = function()
         Env:auth()
     end,

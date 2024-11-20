@@ -2,6 +2,7 @@ local Buffer = require("bitbucket.ui.buffer")
 
 ---@class BitbucketState
 ---@field buffers Buffer[]
+---@field current_pr PullRequest|nil
 local BitbucketState = {}
 BitbucketState.__index = BitbucketState
 

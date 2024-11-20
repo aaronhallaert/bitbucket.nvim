@@ -24,7 +24,6 @@ function M.place_comment_sign(buf_id, start_line, end_line)
         { lnum = end_line, priority = 100 }
     )
     for i = start_line + 1, end_line - 1 do
-        vim.print(i)
         vim.fn.sign_place(
             i,
             "bb_comment",

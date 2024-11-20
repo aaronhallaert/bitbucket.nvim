@@ -174,58 +174,37 @@ function Buffer:write()
     end
 
     for _, comment in ipairs(general_comments) do
-        temp.wrapped_deserialize_comment(
-            self.pr,
-            nil,
-            comment,
-            0,
-            function(extra)
-                local c = self:line_count()
-                ---@cast extra DeserializedComment
-                Writer:write(buf, extra.contents)
-                for _, loc in ipairs(extra.comment_locations) do
-                    signs.place_comment_sign(
-                        buf,
-                        c + loc.start_line,
-                        c + loc.end_line
-                    )
-                end
-            end
-        )
+        local deserialized_comment =
+            temp.deserialize_comment(self.pr, nil, comment, 0)
+        local c = self:line_count()
+        Writer:write(buf, deserialized_comment.contents)
+        local loc = deserialized_comment.comment_location
+        signs.place_comment_sign(buf, c + loc.start_line, c + loc.end_line)
     end
 
     Writer:write(buf, { { "## Review", "Title" } })
 
     for _, comment in ipairs(inline_comments) do
-        temp.wrapped_deserialize_comment(
-            self.pr,
-            nil,
-            comment,
-            0,
-            function(extra)
-                local c = self:line_count()
-                ---@cast extra DeserializedComment
-                local startfold, endfold = Writer:write(buf, extra.contents)
-                for _, loc in ipairs(extra.comment_locations) do
-                    signs.place_comment_sign(
-                        buf,
-                        c + loc.start_line,
-                        c + loc.end_line
-                    )
-                end
+        local deserialized_comment =
+            temp.deserialize_comment(self.pr, nil, comment, 0)
 
-                table.insert(folds, { s = startfold, e = endfold })
+        local c = self:line_count()
+        local startfold, endfold =
+            Writer:write(buf, deserialized_comment.contents)
 
-                self:add_thread({
-                    mark_id = -1,
-                    start_line_mark = startfold - 1,
-                    end_line_mark = endfold,
-                    line = comment.inline.from or comment.inline.to or 0,
-                    path = comment.inline.path,
-                    comment = comment,
-                })
-            end
-        )
+        table.insert(folds, { s = startfold, e = endfold })
+
+        self:add_thread({
+            mark_id = -1,
+            start_line_mark = startfold - 1,
+            end_line_mark = endfold,
+            line = comment.inline.from or comment.inline.to or 0,
+            path = comment.inline.path,
+            comment = comment,
+        })
+
+        local loc = deserialized_comment.comment_location
+        signs.place_comment_sign(buf, c + loc.start_line + 1, c + loc.end_line)
     end
     return folds
 end

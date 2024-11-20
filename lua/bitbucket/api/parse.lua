@@ -18,6 +18,13 @@ M.parse_pullrequests = function(response_body)
 end
 
 ---@param response_body table
+---@return PRComment
+M.parse_comment = function(response_body)
+    ---@type PRComment
+    return response_body
+end
+
+---@param response_body table
 ---@return PRComment[]
 M.parse_comments = function(response_body)
     ---@type PRComment[]

@@ -1,5 +1,7 @@
 local pr_api = require("bitbucket.api.pullrequests")
+local comments_api = require("bitbucket.api.comments")
 local pr_action = require("bitbucket.actions.pullrequests")
+local Logger = require("bitbucket.utils.logger")
 
 ---@param pull_requests PullRequest[]
 local ui_select_pr = function(pull_requests)
@@ -19,6 +21,59 @@ end
 
 M.mine = function()
     pr_api.get_my_pull_requests(ui_select_pr)
+end
+
+M.comment = function()
+    local BitbucketState = require("bitbucket.state")
+    if BitbucketState.current_pr == nil then
+        vim.notify("No PR selected", vim.log.levels.ERROR)
+        return
+    end
+
+    local current_file_path = nil
+    if require("diffview") then
+        local view = require("diffview.lib").get_current_view()
+
+        local lazy = require("diffview.lazy")
+        local DiffView =
+            lazy.access("diffview.scene.views.diff.diff_view", "DiffView") ---@type DiffView|LazyModule
+        if view and (view:instanceof(DiffView.__get())) then
+            current_file_path =
+                require("bitbucket.utils.file").abs_path_to_git_relative_path(
+                    require("diffview.lib").get_current_view().cur_entry.absolute_path
+                )
+        else
+            current_file_path =
+                require("bitbucket.utils.file").git_relative_path(
+                    vim.fn.bufnr()
+                )
+        end
+    else
+        current_file_path =
+            require("bitbucket.utils.file").git_relative_path(vim.fn.bufnr())
+    end
+
+    local current_line = vim.api.nvim_win_get_cursor(0)[1]
+    ---@type PRCommentLocation
+    local loc = {
+        path = current_file_path,
+        to = current_line,
+    }
+
+    -- ask input
+    local content = vim.fn.input("Comment: ")
+
+    comments_api.create_comment(
+        BitbucketState.current_pr,
+        loc,
+        BitbucketState.current_pr.source.commit.hash,
+        BitbucketState.current_pr.destination.commit.hash,
+        content,
+        true,
+        function(response)
+            Logger:log("Comment created", response)
+        end
+    )
 end
 
 M.query = function(query)

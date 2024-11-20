@@ -1,30 +1,31 @@
-local async = require("plenary.async")
-local Logger = require("bitbucket.utils.logger")
 local M = {}
 
 ---@class DeserializedComment
 ---@field contents table
----@field comment_locations CommentLocation[]
+---@field comment_location CommentLocation
 
 --- insert comment in table
+---@param pr PullRequest
 ---@param comment PRCommentNode
 ---@return DeserializedComment
-local function deserialize_comment(pr, contents, comment, indent)
+M.deserialize_comment = function(pr, contents, comment, indent)
     contents = contents or {}
 
-    ---@type CommentLocation[]
-    local comment_locations = {}
+    ---@type CommentLocation
+    local comment_location = {
+        start_line = 0,
+        end_line = 0,
+    }
 
     local comment_display = comment:display(pr, { indent = indent })
     if comment_display.comment_location then
-        table.insert(comment_locations, {
+        comment_location = {
             start_line = comment_display.comment_location.start_line
-                + #contents
-                + 1,
+                + #contents,
             end_line = comment_display.comment_location.end_line
                 + #contents
-                + 1,
-        })
+                + 3, -- name + divider + empty line
+        }
     end
 
     for _, c_line in ipairs(comment_display.contents) do
@@ -33,21 +34,12 @@ local function deserialize_comment(pr, contents, comment, indent)
     table.insert(contents, "")
 
     for _, child in ipairs(comment.children) do
-        deserialize_comment(pr, contents, child, (indent or 0) + 1)
+        local inner_return =
+            M.deserialize_comment(pr, contents, child, (indent or 0) + 1)
+        comment_location.end_line = inner_return.comment_location.end_line
     end
 
-    return { contents = contents, comment_locations = comment_locations }
+    return { contents = contents, comment_location = comment_location }
 end
-
-M.wrapped_deserialize_comment = async.wrap(
-    ---@param pr PullRequest
-    ---@param comment PRCommentNode
-    ---@param callback fun(DeserializedComment)
-    function(pr, contents, comment, indent, callback)
-        local ret = deserialize_comment(pr, contents, comment, indent)
-        callback(ret)
-    end,
-    5
-)
 
 return M
