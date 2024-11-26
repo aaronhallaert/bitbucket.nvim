@@ -18,6 +18,12 @@ local Buffer = {}
 
 Buffer.__index = Buffer
 
+function Buffer:reload_callback()
+    return function()
+        self:reload()
+    end
+end
+
 function Buffer:line_count()
     return vim.api.nvim_buf_line_count(self.buf_id)
 end
@@ -131,7 +137,7 @@ function Buffer:reload()
                             self:clear()
                             self:show()
                             vim.api.nvim_win_set_cursor(0, { current_line, 0 })
-                            vim.api.nvim_command("normal! ztza")
+                            vim.api.nvim_command("normal! zR")
                         end
                     )
                 end

@@ -12,6 +12,9 @@ M.commands = {
         comment = function()
             require("bitbucket.commands.pullrequests").comment()
         end,
+        approve = function()
+            require("bitbucket.commands.pullrequests").approve()
+        end,
         query = function(...)
             q = { ... }
             q = table.concat(q, " ")

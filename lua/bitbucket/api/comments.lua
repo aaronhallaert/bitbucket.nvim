@@ -1,7 +1,6 @@
 local PRCommentNode = require("bitbucket.entities.comments.pr_comment_node")
 local Request = require("bitbucket.api.request")
 local parse = require("bitbucket.api.parse")
-local Logger = require("bitbucket.utils.logger")
 
 local M = {}
 

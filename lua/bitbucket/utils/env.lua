@@ -25,6 +25,14 @@ function Env:auth()
     Env:setup()
 end
 
+function Env:is_auth()
+    if self.user == nil then
+        self:setup()
+    end
+
+    return self.user ~= nil
+end
+
 ---@return boolean success
 function Env:setup()
     local config = require("bitbucket.utils.config")

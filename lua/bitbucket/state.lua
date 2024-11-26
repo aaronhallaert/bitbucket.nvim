@@ -1,8 +1,12 @@
 local Buffer = require("bitbucket.ui.buffer")
 
+---@class SelectedPR
+---@field pr PullRequest
+---@field buffer Buffer
+
 ---@class BitbucketState
 ---@field buffers Buffer[]
----@field current_pr PullRequest|nil
+---@field selected SelectedPR|nil
 local BitbucketState = {}
 BitbucketState.__index = BitbucketState
 
@@ -25,6 +29,12 @@ function BitbucketState:get_buffer(buf_id)
             return buffer
         end
     end
+end
+
+---@param pr PullRequest
+---@param buffer Buffer
+function BitbucketState:set_selected(pr, buffer)
+    self.selected = { pr = pr, buffer = buffer }
 end
 
 return BitbucketState:new()

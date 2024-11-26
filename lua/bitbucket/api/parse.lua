@@ -1,5 +1,4 @@
 local PullRequest = require("bitbucket.entities.pullrequest")
-local Logger = require("bitbucket.utils.logger")
 local M = {}
 
 ---@param response_body table
@@ -27,6 +26,8 @@ end
 ---@param response_body table
 ---@return PRComment[]
 M.parse_comments = function(response_body)
+    require("bitbucket.utils.logger"):log("COMMENTS")
+    require("bitbucket.utils.logger"):log(vim.inspect(response_body))
     ---@type PRComment[]
     return response_body.values
 end

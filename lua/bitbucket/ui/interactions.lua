@@ -1,11 +1,5 @@
 local api = require("bitbucket.api.comments")
 
----@param buffer Buffer
-local reload_callback = function(buffer)
-    return function()
-        buffer:reload()
-    end
-end
 local M = {}
 
 ---@param buf_id number
@@ -33,7 +27,7 @@ M.resolve_thread = function(buf_id)
     api.resolve_comment_thread(
         buffer.pr,
         thread.comment,
-        reload_callback(buffer)
+        buffer:reload_callback()
     )
 end
 
@@ -52,7 +46,7 @@ M.reopen_thread = function(buf_id)
     api.reopen_comment_thread(
         buffer.pr,
         thread.comment,
-        reload_callback(buffer)
+        buffer:reload_callback()
     )
 end
 

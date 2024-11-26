@@ -11,7 +11,7 @@ local Job = require("plenary.job")
 ---@field base_url? string
 ---@field url string
 ---@field opts RequestOptions
----@field fn_parser fun(response_body: any): any
+---@field fn_parser (fun(response_body: any): any)|nil
 ---@field fn_handler fun(value: any)
 local Request = {}
 Request.__index = Request
@@ -59,53 +59,67 @@ function Request:execute()
         -- table.insert(args, self.opts.body)
     end
 
-    Job:new({
-        command = "curl",
-        args = args,
-        on_exit = function(j, return_val)
-            if return_val ~= 0 then
-                Logger:log(
-                    "Request:execute -> on_exit",
-                    { on_exit_response = j, return_val = return_val }
-                )
-                vim.notify("Could not execute request", vim.log.levels.ERROR)
-                return
-            end
-
-            local result = j:result()[1]
-
-            if result == nil then
-                self.fn_handler(nil)
-                return
-            end
-
-            vim.schedule(function()
-                local response = vim.json.decode(
-                    result,
-                    { luanil = { object = true, array = true } }
-                )
-
-                if response.type == "error" then
+    Job
+        :new({
+            command = "curl",
+            args = args,
+            on_exit = function(j, return_val)
+                if return_val ~= 0 then
                     Logger:log(
                         "Request:execute -> on_exit",
-                        { response = response }
+                        { on_exit_response = j, return_val = return_val }
                     )
-
-                    ---@cast response Error
                     vim.notify(
-                        response.error.message,
-                        vim.log.levels.ERROR,
-                        { title = "Bitbucket.nvim" }
+                        "Could not execute request",
+                        vim.log.levels.ERROR
                     )
                     return
                 end
 
-                local parsed_value = self.fn_parser(response)
+                local result = j:result()[1]
 
-                self.fn_handler(parsed_value)
-            end)
-        end,
-    }):start()
+                if result == nil then
+                    self.fn_handler(nil)
+                    return
+                end
+
+                vim.schedule(function()
+                    Logger:log(
+                        "Request:execute -> on_exit",
+                        { result = result }
+                    )
+                    local response = vim.json.decode(
+                        result,
+                        { luanil = { object = true, array = true } }
+                    )
+
+                    if response.type == "error" then
+                        Logger:log(
+                            "Request:execute -> on_exit",
+                            { response = response }
+                        )
+
+                        ---@cast response Error
+                        vim.notify(
+                            response.error.message,
+                            vim.log.levels.ERROR,
+                            { title = "Bitbucket.nvim" }
+                        )
+                        return
+                    end
+
+                    if self.fn_parser == nil then
+                        self.fn_handler(response)
+                        return
+                    end
+
+                    local parsed_value = self.fn_parser(response)
+
+                    self.fn_handler(parsed_value)
+                end)
+            end,
+        })
+        :start()
 end
 
 return Request

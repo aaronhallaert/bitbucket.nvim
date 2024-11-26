@@ -37,4 +37,17 @@ M.get_my_pull_requests = function(callback)
     return M.get_pull_requests(query, callback)
 end
 
+M.approve = function(pr, handle_response)
+    local url = string.format("/pullrequests/%d/approve", pr.id)
+
+    Request:new({
+        url = url,
+        opts = { method = "POST" },
+        fn_parser = nil,
+        fn_handler = function(response)
+            handle_response(response)
+        end,
+    }):execute()
+end
+
 return M

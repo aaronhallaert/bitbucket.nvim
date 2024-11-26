@@ -23,9 +23,23 @@ M.mine = function()
     pr_api.get_my_pull_requests(ui_select_pr)
 end
 
+M.approve = function()
+    local BitbucketState = require("bitbucket.state")
+    if BitbucketState.selected == nil then
+        vim.notify("No PR selected", vim.log.levels.ERROR)
+        return
+    end
+
+    pr_api.approve(BitbucketState.selected.pr, function(response)
+        Logger:log("Approved PR", response)
+        BitbucketState.selected.buffer:reload()
+        vim.notify("Approved PR", vim.log.levels.INFO)
+    end)
+end
+
 M.comment = function()
     local BitbucketState = require("bitbucket.state")
-    if BitbucketState.current_pr == nil then
+    if BitbucketState.selected == nil then
         vim.notify("No PR selected", vim.log.levels.ERROR)
         return
     end
@@ -64,10 +78,10 @@ M.comment = function()
     local content = vim.fn.input("Comment: ")
 
     comments_api.create_comment(
-        BitbucketState.current_pr,
+        BitbucketState.selected.pr,
         loc,
-        BitbucketState.current_pr.source.commit.hash,
-        BitbucketState.current_pr.destination.commit.hash,
+        BitbucketState.selected.pr.source.commit.hash,
+        BitbucketState.selected.pr.destination.commit.hash,
         content,
         true,
         function(response)

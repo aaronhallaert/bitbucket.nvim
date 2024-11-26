@@ -15,6 +15,7 @@ local buf_factory = function(pr, comments, activity, statuses)
         activity = activity,
         statuses = statuses,
     })
+    BitbucketState:set_selected(pr, buffer)
     BitbucketState:add_buffer(buffer)
     buffer:show()
 end
@@ -37,8 +38,6 @@ local open_in_buf = function(item)
             )
         end
     )
-
-    BitbucketState.current_pr = item
 end
 
 local M = {}

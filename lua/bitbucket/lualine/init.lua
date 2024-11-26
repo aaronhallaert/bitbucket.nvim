@@ -30,7 +30,7 @@ M.component_pr_reviewing = {
     color = { bg = "#313244", fg = "#80A7EA" },
     icon = " ",
     cond = function()
-        return Env:is_bitbucket()
+        return Env:is_bitbucket() and Env:is_auth()
     end,
     on_click = function(n, mouse)
         if n == 1 then
@@ -49,7 +49,7 @@ M.component_pr_mine = {
     color = { bg = "#313244", fg = "#80A7EA" },
     icon = " ",
     cond = function()
-        return Env:is_bitbucket()
+        return Env:is_bitbucket() and Env:is_auth()
     end,
     on_click = function(n, mouse)
         if n == 1 then
