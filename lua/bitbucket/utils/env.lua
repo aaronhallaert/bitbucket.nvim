@@ -91,7 +91,7 @@ function Env:is_bitbucket()
         return false, self._remote_initialized
     end
 
-    local find_start, _ = string.find(self.remote, "%@bitbucket")
+    local find_start, _ = string.find(self.remote, "%@bitbucket.org")
 
     return find_start ~= nil, self._remote_initialized
 end
