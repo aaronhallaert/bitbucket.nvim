@@ -6,6 +6,7 @@ local CommitStatus = require("bitbucket.entities.commit_status")
 local Activity = require("bitbucket.entities.activity")
 local Logger = require("bitbucket.utils.logger")
 local temp = require("bitbucket.actions.comments")
+local help = require("bitbucket.ui.help")
 
 ---@class Buffer
 ---@field buf_id number
@@ -36,6 +37,12 @@ function Buffer:new(o)
     vim.api.nvim_buf_set_keymap(obj.buf_id, "n", "gf", "", {
         callback = function()
             navigation.goto_file(obj.buf_id)
+        end,
+    })
+
+    vim.api.nvim_buf_set_keymap(obj.buf_id, "n", "g?", "", {
+        callback = function()
+            help.open()
         end,
     })
 
