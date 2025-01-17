@@ -1,4 +1,5 @@
 local pr_api = require("bitbucket.api.pullrequests")
+local BitbucketState = require("bitbucket.state")
 local comments_api = require("bitbucket.api.comments")
 local pr_action = require("bitbucket.actions.pullrequests")
 local Logger = require("bitbucket.utils.logger")
@@ -24,7 +25,6 @@ M.mine = function()
 end
 
 M.approve = function()
-    local BitbucketState = require("bitbucket.state")
     if BitbucketState.selected == nil then
         vim.notify("No PR selected", vim.log.levels.ERROR)
         return
@@ -37,8 +37,97 @@ M.approve = function()
     end)
 end
 
+---@param loc PRCommentLocation
+local function create_comment(loc)
+    -- Create a new buffer
+    local buf = vim.api.nvim_create_buf(false, true)
+
+    vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
+    vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
+    -- Get the current window dimensions
+    local width = vim.api.nvim_get_option_value("columns", {})
+    local height = vim.api.nvim_get_option_value("lines", {})
+
+    -- Calculate the floating window size and position
+    local win_width = math.ceil(width * 0.5)
+    local win_height = 10
+    local row = math.ceil((height - win_height) / 2)
+    local col = math.ceil((width - win_width) / 2)
+
+    -- Create the floating window
+    local win = vim.api.nvim_open_win(buf, true, {
+        relative = "editor",
+        width = win_width,
+        height = win_height,
+        row = row,
+        col = col,
+        style = "minimal",
+    })
+    vim.api.nvim_buf_set_keymap(
+        buf,
+        "n",
+        "q",
+        ":q<CR>",
+        { noremap = true, silent = true }
+    )
+
+    vim.api.nvim_buf_set_lines(buf, -1, -1, false, { "" })
+    -- Create a namespace for the virtual text
+    local ns_id = vim.api.nvim_create_namespace("bitbucket_virtual_text")
+
+    -- Function to set the virtual text at the last line of the buffer
+    local function set_virtual_text(bfr)
+        -- first clear the existing virtual text
+        vim.api.nvim_buf_clear_namespace(bfr, ns_id, 0, -1)
+        local last_line = vim.api.nvim_buf_line_count(bfr) - 1
+        -- also add an empty line at the end
+        vim.api.nvim_buf_set_extmark(bfr, ns_id, last_line, 0, {
+            virt_text = {
+                { "<q> to confirm", "Comment" },
+            },
+            virt_text_pos = "eol",
+        })
+    end
+
+    -- Set the initial virtual text
+    set_virtual_text(buf)
+
+    -- Create an autocommand to update the virtual text on buffer changes
+    vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+        buffer = buf,
+        callback = function()
+            set_virtual_text(buf)
+        end,
+    })
+
+    -- Create an autocommand to capture input on WinLeave
+    vim.api.nvim_create_autocmd("WinLeave", {
+        buffer = buf,
+        callback = function()
+            local captured_input = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+            -- remove the last empty line
+            if captured_input[#captured_input] == "" then
+                table.remove(captured_input)
+            end
+
+            vim.api.nvim_buf_delete(buf, { force = true })
+
+            comments_api.create_comment(
+                BitbucketState.selected.pr,
+                loc,
+                BitbucketState.selected.pr.source.commit.hash,
+                BitbucketState.selected.pr.destination.commit.hash,
+                table.concat(captured_input, "\n"),
+                true,
+                function(response)
+                    Logger:log("Comment created", response)
+                end
+            )
+        end,
+    })
+end
+
 M.comment = function()
-    local BitbucketState = require("bitbucket.state")
     if BitbucketState.selected == nil then
         vim.notify("No PR selected", vim.log.levels.ERROR)
         return
@@ -75,19 +164,7 @@ M.comment = function()
     }
 
     -- ask input
-    local content = vim.fn.input("Comment: ")
-
-    comments_api.create_comment(
-        BitbucketState.selected.pr,
-        loc,
-        BitbucketState.selected.pr.source.commit.hash,
-        BitbucketState.selected.pr.destination.commit.hash,
-        content,
-        true,
-        function(response)
-            Logger:log("Comment created", response)
-        end
-    )
+    create_comment(loc)
 end
 
 M.query = function(query)
