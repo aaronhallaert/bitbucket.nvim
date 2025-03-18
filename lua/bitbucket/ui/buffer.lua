@@ -167,9 +167,13 @@ function Buffer:write()
         return item:is_inline()
     end, self.comments)
 
-    local general_comments = vim.tbl_filter(function(item)
-        return item:is_general_comment()
-    end, self.comments)
+    local general_comments = vim.tbl_filter(
+        ---@param item PRCommentNode
+        function(item)
+            return item:is_general_comment()
+        end,
+        self.comments
+    )
 
     if next(self.statuses) ~= nil then
         Logger:log(self.statuses)
@@ -189,10 +193,12 @@ function Buffer:write()
     for _, comment in ipairs(general_comments) do
         local deserialized_comment =
             temp.deserialize_comment(self.pr, nil, comment, 0)
-        local c = self:line_count()
-        Writer:write(buf, deserialized_comment.contents)
-        local loc = deserialized_comment.comment_location
-        signs.place_comment_sign(buf, c + loc.start_line, c + loc.end_line)
+        -- local c = self:line_count()
+        local s, e = Writer:write(buf, deserialized_comment.contents)
+        -- local loc = deserialized_comment.comment_location
+        -- Logger:log("Final contents length", #deserialized_comment.contents)
+        -- Logger:log("Final deserialized location", loc)
+        signs.place_comment_sign(buf, s, e - 1)
     end
 
     Writer:write(buf, { { "## Review", "Title" } })
@@ -201,7 +207,6 @@ function Buffer:write()
         local deserialized_comment =
             temp.deserialize_comment(self.pr, nil, comment, 0)
 
-        local c = self:line_count()
         local startfold, endfold =
             Writer:write(buf, deserialized_comment.contents)
 
@@ -217,7 +222,12 @@ function Buffer:write()
         })
 
         local loc = deserialized_comment.comment_location
-        signs.place_comment_sign(buf, c + loc.start_line + 1, c + loc.end_line)
+
+        signs.place_comment_sign(
+            buf,
+            startfold + loc.start_line + 1,
+            startfold + loc.end_line + 1
+        )
     end
     return folds
 end

@@ -1,3 +1,4 @@
+local Logger = require("bitbucket.utils.logger")
 local M = {}
 
 ---@class DeserializedComment
@@ -22,9 +23,7 @@ M.deserialize_comment = function(pr, contents, comment, indent)
         comment_location = {
             start_line = comment_display.comment_location.start_line
                 + #contents,
-            end_line = comment_display.comment_location.end_line
-                + #contents
-                + 3, -- name + divider + empty line
+            end_line = comment_display.comment_location.end_line + #contents,
         }
     end
 

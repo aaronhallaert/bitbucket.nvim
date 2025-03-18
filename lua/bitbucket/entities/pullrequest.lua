@@ -36,6 +36,7 @@ function PullRequest:new(o)
 end
 
 function PullRequest:browse()
+    vim.fn.setreg("+", self.links.html.href)
     vim.ui.open(self.links.html.href)
 end
 

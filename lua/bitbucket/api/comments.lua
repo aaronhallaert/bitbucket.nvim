@@ -1,6 +1,7 @@
 local PRCommentNode = require("bitbucket.entities.comments.pr_comment_node")
 local Request = require("bitbucket.api.request")
 local parse = require("bitbucket.api.parse")
+local Logger = require("bitbucket.utils.logger")
 
 local M = {}
 
@@ -50,19 +51,51 @@ M.create_comment = function(
     }):execute()
 end
 
-M.get_comments = function(pr, handle_comments)
+---@param pr PullRequest
+---@param handle_comments fun(pr: PullRequest, comments: PRCommentNode)
+---@param page? number
+---@param joined_comments? PRComment[]
+M.get_comments = function(pr, handle_comments, page, joined_comments)
     local url = string.format("/pullrequests/%d/comments", pr.id)
-    url = url .. "?fields=values.*,values.resolution.*"
+    url = url .. "?fields=size,next,values.*,values.resolution.*"
 
-    Request:new({
-        url = url,
-        opts = { method = "GET", content_type = "application/json" },
-        fn_parser = parse.parse_comments,
-        fn_handler = function(comments)
-            local root_comments = PRCommentNode.create_tree(comments)
-            handle_comments(pr, root_comments)
-        end,
-    }):execute()
+    if page then
+        url = url .. "&page=" .. page
+    end
+
+    ---@type PRComment[]
+    local all_comments = joined_comments or {}
+
+    Request
+        :new({
+            url = url,
+            opts = { method = "GET", content_type = "application/json" },
+            fn_parser = parse.parse_comments,
+            ---@param comments PRCommentsResponse
+            fn_handler = function(comments)
+                for _, comment in ipairs(comments.values) do
+                    table.insert(all_comments, comment)
+                end
+
+                Logger:log("#all_comments", #all_comments)
+                Logger:log("#new_comments", #comments.values)
+                if comments.next and comments.next ~= "" then
+                    local next_page = comments.next:match(".*page=(%d*).*")
+                    Logger:log("next_page", next_page)
+                    require("bitbucket.api.comments").get_comments(
+                        pr,
+                        handle_comments,
+                        next_page,
+                        all_comments
+                    )
+                    return
+                end
+
+                local root_comments = PRCommentNode.create_tree(all_comments)
+                handle_comments(pr, root_comments)
+            end,
+        })
+        :execute()
 end
 
 ---@param pr PullRequest

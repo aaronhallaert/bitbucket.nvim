@@ -6,6 +6,12 @@ M.parse_html = function(html)
 
     result = string.gsub(result, '<img class="emoji".-alt="(.-)".->', "%1")
 
+    result = string.gsub(result, "<strong>(.-)</strong>", "**%1**")
+    result = string.gsub(
+        result,
+        '<div class="codehilite language%-(.-)"><pre><span></span><code>(.-)</code></pre></div>',
+        "```%1\n%2```"
+    )
     result = string.gsub(result, "<code>(.-)</code>", "`%1`")
     -- &gt; &lt; &amp; &quot; &apos; &amp;
     result = string.gsub(result, "&gt;", ">")
