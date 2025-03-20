@@ -17,11 +17,13 @@ Heavily inspired by [octo.nvim](https://github.com/pwntester/octo.nvim)
 
 `:Bitbucket`
 
-| Ex command | subcommand | action                                                                  |
-| ---        | ---        | ---                                                                     |
-| pull       | mine       | open picker for all my pullrequests in the current repo                 |
-|            | reviewing  | open picker for all pullrequests marked as reviewer in the current repo |
-| auth       |            | authenticate with username and APP_PASSWORD                             |
+| Ex command | subcommand | context     | action                                                                                                 |
+| ---        | ---        | ---         | ---                                                                                                    |
+| pull       | mine       |             | open picker for all my pullrequests in the current repo                                                |
+|            | reviewing  |             | open picker for all pullrequests marked as reviewer in the current repo                                |
+|            | comment    | in diffview | create a pending comment                                                                               |
+|            | approve    |             | approve the last opened pullrequest (note: this won't finalize pending comments, it will only approve) |
+| auth       |            |             | authenticate with username and APP_PASSWORD                                                            |
 
 ## Keymaps
 
@@ -33,3 +35,7 @@ Heavily inspired by [octo.nvim](https://github.com/pwntester/octo.nvim)
 | normal | gf         | go to file         | bitbucket buffer - comment |
 | normal | <leader>rt | resolve thread     | bitbucket buffer - comment |
 | normal | <leader>ot | reopen thread      | bitbucket buffer - comment |
+
+## Dependencies
+
+* [diffview.nvim](https://github.com/sindrets/diffview.nvim)
