@@ -60,7 +60,7 @@ function Buffer:new(o)
 
     vim.api.nvim_buf_set_keymap(obj.buf_id, "n", "gd", "", {
         callback = function()
-            require("bitbucket.actions.pullrequests").open_diff(obj.pr)
+            require("bitbucket.actions.pullrequests").open_diff(obj.pr, obj)
         end,
     })
 
@@ -168,7 +168,7 @@ function Buffer:write()
     end, self.comments)
 
     local general_comments = vim.tbl_filter(
-        ---@param item PRCommentNode
+    ---@param item PRCommentNode
         function(item)
             return item:is_general_comment()
         end,
