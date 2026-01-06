@@ -9,7 +9,7 @@ M.setup = function()
 
     -- create Bitbucket command
     vim.api.nvim_create_user_command("Bitbucket", function(opt)
-        bb_commands.bitbucket(unpack(opt.fargs))
+        bb_commands.bitbucket(opt.line1, opt.line2, unpack(opt.fargs))
     end, {
         range = true,
         nargs = "*",

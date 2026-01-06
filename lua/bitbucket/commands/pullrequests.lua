@@ -127,7 +127,7 @@ local function create_comment(loc)
     })
 end
 
-M.comment = function()
+M.comment = function(start_line, end_line)
     if BitbucketState.selected == nil then
         vim.notify("No PR selected", vim.log.levels.ERROR)
         return
@@ -156,12 +156,23 @@ M.comment = function()
             require("bitbucket.utils.file").git_relative_path(vim.fn.bufnr())
     end
 
-    local current_line = vim.api.nvim_win_get_cursor(0)[1]
+    -- If no range is provided (normal mode), use the current cursor position
+    if not start_line or not end_line then
+        local current_line = vim.api.nvim_win_get_cursor(0)[1]
+        start_line = current_line
+        end_line = current_line
+    end
+
     ---@type PRCommentLocation
     local loc = {
         path = current_file_path,
-        to = current_line,
+        to = end_line,
     }
+
+    -- Only set start_to if we have multiple lines selected
+    if start_line < end_line then
+        loc.start_to = start_line
+    end
 
     -- ask input
     create_comment(loc)

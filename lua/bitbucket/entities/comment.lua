@@ -5,7 +5,9 @@
 ---@field html string
 
 ---@class PRCommentLocation
+---@field start_from? number
 ---@field from? number
+---@field start_to? number
 ---@field to? number
 ---@field path string
 

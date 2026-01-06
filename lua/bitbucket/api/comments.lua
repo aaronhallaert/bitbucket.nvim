@@ -33,6 +33,7 @@ M.create_comment = function(
     if loc then
         body.inline = {
             path = loc.path,
+            start_to = loc.start_to,
             to = loc.to,
         }
     end

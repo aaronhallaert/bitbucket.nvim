@@ -9,8 +9,8 @@ M.commands = {
         mine = function()
             require("bitbucket.commands.pullrequests").mine()
         end,
-        comment = function()
-            require("bitbucket.commands.pullrequests").comment()
+        comment = function(line1, line2)
+            require("bitbucket.commands.pullrequests").comment(line1, line2)
         end,
         approve = function()
             require("bitbucket.commands.pullrequests").approve()
@@ -31,12 +31,16 @@ M.commands = {
     end,
 }
 
-M.bitbucket = function(object, action, ...)
+M.bitbucket = function(line1, line2, object, action, ...)
     if object ~= "auth" and not Env:setup() then
         return
     end
 
-    if object ~= nil and action ~= nil then
+    vim.print("Bitbucket command:", object, action, ...)
+    -- Special handling for pull comment command to pass range
+    if object == "pull" and action == "comment" then
+        M.commands[object][action](line1, line2, ...)
+    elseif object ~= nil and action ~= nil then
         M.commands[object][action](...)
     elseif object ~= nil and action == nil then
         M.commands[object](...)
